@@ -15,11 +15,11 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Capabilities for ucsfsis access plugin.
+ * Capabilities for UCSF Student Information System enrolment plugin.
  *
  * @package    enrol_ucsfsis
- * @author     Carson Tam <carson.tam@ucsf.edu>
- * @copyright  2015 The Regents of the University of California
+ * @copyright  2016 The Regents of the University of California
+ * @author     Carson Tam
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -28,17 +28,6 @@ defined('MOODLE_INTERNAL') || die();
 $capabilities = array(
 
     'enrol/ucsfsis:config' => array(
-
-        'captype' => 'write',
-        'contextlevel' => CONTEXT_COURSE,
-        'archetypes' => array(
-            'editingteacher' => CAP_ALLOW,
-            'manager' => CAP_ALLOW,
-        )
-    ),
-
-    /* This is used only when sync suspends users instead of full unenrolment. */
-    'enrol/ucsfsis:unenrol' => array(
 
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,

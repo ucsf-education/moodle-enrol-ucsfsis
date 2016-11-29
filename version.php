@@ -15,17 +15,17 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * UCSF Student Information System enrolment plugin version specification.
+ * UCSF Student Information System enrolment plugin.
  *
  * @package    enrol_ucsfsis
  * @copyright  2016 The Regents of the University of California
- * @author     Carson Tam
+ * @author     Carson Tam <carson.tam@ucsf.edu>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2016020600;        // The current plugin version (Date: YYYYMMDDRR)
-$plugin->requires  = 2015111000;        // Requires this Moodle version
+$plugin->version   = 2016060100;        // The current plugin version (Date: YYYYMMDDXX)
+$plugin->requires  = 2014051200;        // Requires this Moodle version
 $plugin->component = 'enrol_ucsfsis';   // Full name of the plugin (used for diagnostics)
 $plugin->cron      = 60*60;             // run cron every hour by default, it is not out-of-sync often

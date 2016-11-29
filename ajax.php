@@ -15,25 +15,21 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * This file processes AJAX enrolment actions and returns JSON for the UCSF SIS plugin
+ * This file processes AJAX enrolment actions and returns JSON for the UCSFSIS plugin
  *
  * The general idea behind this file is that any errors should throw exceptions
  * which will be returned and acted upon by the calling AJAX script.
  *
  * @package    enrol_ucsfsis
- * @copyright  2016 The Regents of the University of California
  * @author     Carson Tam <carson.tam@ucsf.edu>
+ * @copyright  2015 The Regents of the University of California
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 define('AJAX_SCRIPT', true);
 
 require('../../config.php');
-require_once($CFG->dirroot.'/enrol/locallib.php');
-require_once($CFG->dirroot.'/enrol/ucsfsis/locallib.php');
-require_once($CFG->dirroot.'/group/lib.php');
 
-// Must have the sesskey.
 $id      = required_param('id', PARAM_INT); // course id
 $action  = required_param('action', PARAM_ALPHANUMEXT);
 
@@ -50,78 +46,42 @@ require_login($course);
 require_capability('moodle/course:enrolreview', $context);
 require_sesskey();
 
-// if (!enrol_is_enabled('cohort')) {
-//     // This should never happen, no need to invent new error strings.
-//     throw new enrol_ajax_exception('errorenrolcohort');
-// }
+if (!enrol_is_enabled('ucsfsis')) {
+    // This should never happen, no need to invent new error strings.
+    throw new enrol_ajax_exception('errorenrolucsfsis');
+}
 
-// echo $OUTPUT->header(); // Send headers.
-
-// $manager = new course_enrolment_manager($PAGE, $course);
+echo $OUTPUT->header(); // Send headers.
 
 $outcome = new stdClass();
 $outcome->success = true;
 $outcome->response = new stdClass();
 $outcome->error = '';
 
-// switch ($action) {
-//     case 'getassignable':
-//         $otheruserroles = optional_param('otherusers', false, PARAM_BOOL);
-//         $outcome->response = array_reverse($manager->get_assignable_roles($otheruserroles), true);
-//         break;
-//     case 'getdefaultcohortrole': //TODO: use in ajax UI MDL-24280
-//         $cohortenrol = enrol_get_plugin('cohort');
-//         $outcome->response = $cohortenrol->get_config('roleid');
-//         break;
-//     case 'getcohorts':
-//         require_capability('moodle/course:enrolconfig', $context);
-//         $offset = optional_param('offset', 0, PARAM_INT);
-//         $search  = optional_param('search', '', PARAM_RAW);
-//         $outcome->response = enrol_cohort_search_cohorts($manager, $offset, 25, $search);
-//         // Some browsers reorder collections by key.
-//         $outcome->response['cohorts'] = array_values($outcome->response['cohorts']);
-//         break;
-//     case 'enrolcohort':
-//         require_capability('moodle/course:enrolconfig', $context);
-//         require_capability('enrol/cohort:config', $context);
-//         $roleid = required_param('roleid', PARAM_INT);
-//         $cohortid = required_param('cohortid', PARAM_INT);
+$enrol = enrol_get_plugin('ucsfsis');
 
-//         $roles = $manager->get_assignable_roles();
-//         if (!enrol_cohort_can_view_cohort($cohortid) || !array_key_exists($roleid, $roles)) {
-//             throw new enrol_ajax_exception('errorenrolcohort');
-//         }
-//         $enrol = enrol_get_plugin('cohort');
-//         $enrol->add_instance($manager->get_course(), array('customint1' => $cohortid, 'roleid' => $roleid));
-//         $trace = new null_progress_trace();
-//         enrol_cohort_sync($trace, $manager->get_course()->id);
-//         $trace->finished();
-//         break;
-//     case 'enrolcohortusers':
-//         //TODO: this should be moved to enrol_manual, see MDL-35618.
-//         require_capability('enrol/manual:enrol', $context);
-//         $roleid = required_param('roleid', PARAM_INT);
-//         $cohortid = required_param('cohortid', PARAM_INT);
+switch ($action) {
+    case 'gettermoptions':
+        require_capability('moodle/course:enrolconfig', $context);
+        $termid = required_param('termid', PARAM_ALPHANUMEXT);
+        $http = $enrol->get_http_client();
+        $subjects = $http->get_objects('/terms/' . $termid . '/subjects', null, 'name');
+        foreach ($subjects as $subject) {
+            $subjectoptions[trim($subject->id)] = trim($subject->code) . ": " . $subject->name;
+            $subjectcourseoptions[trim($subject->id)] = array('' => get_string('choosedots'));
+        }
 
-//         $roles = $manager->get_assignable_roles();
-//         if (!enrol_cohort_can_view_cohort($cohortid) || !array_key_exists($roleid, $roles)) {
-//             throw new enrol_ajax_exception('errorenrolcohort');
-//         }
+        $courses = $http->get_objects('/terms/' . $termid . '/courses', null, 'courseNumber');
+        foreach ($courses as $course) {
+            $subjectcourseoptions[trim($course->subjectForCorrespondTo)]['"'.trim($course->id).'"']
+                = trim($course->courseNumber) . ": " . $course->name;
+        }
 
-//         $result = enrol_cohort_enrol_all_users($manager, $cohortid, $roleid);
-//         if ($result === false) {
-//             throw new enrol_ajax_exception('errorenrolcohortusers');
-//         }
-
-//         $outcome->success = true;
-//         $outcome->response->users = $result;
-//         $outcome->response->title = get_string('success');
-//         $outcome->response->message = get_string('enrollednewusers', 'enrol', $result);
-//         $outcome->response->yesLabel = get_string('ok');
-//         break;
-//     default:
-//         throw new enrol_ajax_exception('unknowajaxaction');
-// }
+        $outcome->response = array( $subjectoptions, $subjectcourseoptions );
+        break;
+    default:
+        throw new enrol_ajax_exception('unknowajaxaction');
+}
 
 echo json_encode($outcome);
 die();

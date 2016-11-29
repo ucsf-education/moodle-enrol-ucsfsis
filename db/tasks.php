@@ -15,27 +15,26 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Meta link enrolment plugin uninstallation.
+ * UCSF Student Information System enrolment task.
  *
  * @package    enrol_ucsfsis
+ * @category   task
+ * @copyright  2016 The Regents of the University of California
  * @author     Carson Tam <carson.tam@ucsf.edu>
- * @copyright  2015 The Regents of the University of California
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-function xmldb_enrol_ucsfsis_uninstall() {
-    global $CFG, $DB;
-
-    $ucsfsis = enrol_get_plugin('ucsfsis');
-    $rs = $DB->get_recordset('enrol', array('enrol'=>'ucsfsis'));
-    foreach ($rs as $instance) {
-        $ucsfsis->delete_instance($instance);
-    }
-    $rs->close();
-
-    role_unassign_all(array('component'=>'enrol_ucsfsis'));
-
-    return true;
-}
+$tasks = array(
+    array(
+        'classname' => 'enrol_ucsfsis\task\cron_task',
+        'blocking' => 0,
+        'minute' => '*/10',
+        // SIS server is not available between 3 to 6 am.
+        'hour' => '0-2,6-23',
+        'day' => '*',
+        'month' => '*',
+        'dayofweek' => '*'
+    )
+);

@@ -15,41 +15,55 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Adds new instance of enrol_cohort to specified course.
+ * Add new instance of UCSF Student Information System enrolment plugin.
  *
- * @package    enrol_cohort
- * @copyright  2010 Petr Skoda {@link http://skodak.org}
+ * @package    enrol_ucsfsis
+ * @copyright  2016 The Regents of the University of California
+ * @author     Carson Tam <carson.tam@ucsf.edu>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 require('../../config.php');
-require_once("$CFG->dirroot/enrol/cohort/edit_form.php");
-require_once("$CFG->dirroot/enrol/cohort/locallib.php");
-require_once("$CFG->dirroot/group/lib.php");
+require_once('edit_form.php');
+
+require_once('locallib.php');
+require_once('../../group/lib.php');
 
 $courseid = required_param('courseid', PARAM_INT);
 $instanceid = optional_param('id', 0, PARAM_INT);
+$submitted_termid = optional_param('selectterm', null, PARAM_ALPHANUM);
 
 $course = $DB->get_record('course', array('id'=>$courseid), '*', MUST_EXIST);
 $context = context_course::instance($course->id, MUST_EXIST);
 
 require_login($course);
 require_capability('moodle/course:enrolconfig', $context);
-require_capability('enrol/cohort:config', $context);
+require_capability('enrol/ucsfsis:config', $context);
 
-$PAGE->set_url('/enrol/cohort/edit.php', array('courseid'=>$course->id, 'id'=>$instanceid));
+$PAGE->set_url('/enrol/ucsfsis/edit.php', array('courseid'=>$course->id, 'id'=>$instanceid));
 $PAGE->set_pagelayout('admin');
 
 $returnurl = new moodle_url('/enrol/instances.php', array('id'=>$course->id));
-if (!enrol_is_enabled('cohort')) {
+if (!enrol_is_enabled('ucsfsis')) {
     redirect($returnurl);
 }
 
-$enrol = enrol_get_plugin('cohort');
+$enrol = enrol_get_plugin('ucsfsis');
 
-if ($instanceid) {
-    $instance = $DB->get_record('enrol', array('courseid'=>$course->id, 'enrol'=>'cohort', 'id'=>$instanceid), '*', MUST_EXIST);
+// Allow only one instance for each course
+if ($instances = $DB->get_records('enrol', array('courseid'=>$course->id, 'enrol'=>'ucsfsis'), 'id ASC')) {
 
+    $instance = array_shift($instances);
+    if ($instances) {
+        // Oh - we allow only one instance per course!!
+        foreach ($instances as $del) {
+            $enrol->delete_instance($del);
+        }
+    }
+
+// } else if ($instanceid) {
+//     // Logic to allow multiple instances
+//     $instance = $DB->get_record('enrol', array('courseid'=>$course->id, 'enrol'=>'ucsfsis', 'id'=>$instanceid), '*', MUST_EXIST);
 } else {
     // No instance yet, we have to add new instance.
     if (!$enrol->get_newinstance_link($course->id)) {
@@ -57,50 +71,63 @@ if ($instanceid) {
     }
     navigation_node::override_active_url(new moodle_url('/enrol/instances.php', array('id'=>$course->id)));
     $instance = new stdClass();
-    $instance->id         = null;
-    $instance->courseid   = $course->id;
-    $instance->enrol      = 'cohort';
-    $instance->customint1 = ''; // Cohort id.
-    $instance->customint2 = 0;  // Optional group id.
-}
-
-// Try and make the manage instances node on the navigation active.
-$courseadmin = $PAGE->settingsnav->get('courseadmin');
-if ($courseadmin && $courseadmin->get('users') && $courseadmin->get('users')->get('manageinstances')) {
-    $courseadmin->get('users')->get('manageinstances')->make_active();
+    $instance->id          = null;
+    $instance->courseid    = $course->id;
+    $instance->enrol       = 'ucsfsis';
+    $instance->status      = ENROL_INSTANCE_ENABLED;
+    $instance->customint1  = null;  // UCSF SIS course ID
 }
 
 
-$mform = new enrol_cohort_edit_form(null, array($instance, $enrol, $course));
+// Tell $mform->definition() that we are loading a known term
+if (!empty($submitted_termid)) {
+    $instance->submitted_termid = $submitted_termid;
+}
+
+// Edit form to be shown here
+$mform = new enrol_ucsfsis_edit_form(null, array($instance, $enrol, $course));
 
 if ($mform->is_cancelled()) {
     redirect($returnurl);
 
 } else if ($data = $mform->get_data()) {
-    if ($data->id) {
-        // NOTE: no cohort changes here!!!
-        if ($data->roleid != $instance->roleid) {
-            // The sync script can only add roles, for perf reasons it does not modify them.
-            role_unassign_all(array('contextid'=>$context->id, 'roleid'=>$instance->roleid, 'component'=>'enrol_cohort', 'itemid'=>$instance->id));
-        }
-        $instance->name         = $data->name;
-        $instance->status       = $data->status;
-        $instance->roleid       = $data->roleid;
-        $instance->customint2   = $data->customint2;
-        $instance->timemodified = time();
+    // We are here only because the form is submitted.
+
+    // TODO: Might need to check selectsubjectcourse[1] isset.
+    if ($instance->id) {
+        $instance->roleid          = $data->roleid;
+        $instance->customint1      = trim($data->selectsubjectcourse[1]);
+        // Clear SIS course id if exists
+        $instance->customchar1     = '';
+        $instance->timemodified    = time();
+
         $DB->update_record('enrol', $instance);
-    }  else {
-        $enrol->add_instance($course, array('name'=>$data->name, 'status'=>$data->status, 'customint1'=>$data->customint1, 'roleid'=>$data->roleid, 'customint2'=>$data->customint2));
+
+        // Use standard API to update instance status.
+        if ($instance->status != $data->status) {
+            $instance = $DB->get_record('enrol', array('id'=>$instance->id));
+            $enrol->update_status($instance, $data->status);
+            $context->mark_dirty();
+        }
+
+    } else {
+        $fields = array(
+            'status'          => $data->status,
+            'customint1'      => trim($data->selectsubjectcourse[1]),
+            'roleid'          => $data->roleid);
+        $enrol->add_instance($course, $fields);
     }
+
     $trace = new null_progress_trace();
-    enrol_cohort_sync($trace, $course->id);
+    enrol_ucsfsis_sync($trace, $course->id);
     $trace->finished();
     redirect($returnurl);
 }
 
+$PAGE->set_title(get_string('pluginname', 'enrol_ucsfsis'));
 $PAGE->set_heading($course->fullname);
-$PAGE->set_title(get_string('pluginname', 'enrol_cohort'));
 
 echo $OUTPUT->header();
+echo $OUTPUT->heading(get_string('pluginname', 'enrol_ucsfsis'));
 $mform->display();
 echo $OUTPUT->footer();
