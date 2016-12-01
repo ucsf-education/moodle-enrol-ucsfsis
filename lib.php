@@ -1444,6 +1444,7 @@ class sis_client extends curl {
 
         return $result;
     }
+}
 
 /**
  * OAuth 2.0 client for Ucsfsis Services
