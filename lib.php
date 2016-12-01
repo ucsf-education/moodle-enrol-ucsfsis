@@ -516,24 +516,6 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
     }
 
     /**
-     * Does this plugin allow manual unenrolment of a specific user?
-     * Yes, but only if user suspended...
-     *
-     * @param stdClass $instance course enrol instance
-     * @param stdClass $ue record from user_enrolments table
-     *
-     * @return bool - true means user with 'enrol/xxx:unenrol' may unenrol this user, false means nobody may touch this user enrolment
-     */
-    // public function allow_unenrol_user(stdClass $instance, stdClass $ue) {
-    //     // TODO: Test this feature
-    //     if ($ue->status == ENROL_USER_SUSPENDED) {
-    //         return true;
-    //     }
-
-    //     return false;
-    // }
-
-    /**
      * Gets an array of the user enrolment actions.
      *
      * @param course_enrolment_manager $manager
@@ -1161,41 +1143,6 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
 
 }
 
-
-// First you have to get access token calling https://stage-unified-api.ucsf.edu/oauth/1.0/access_token using HTTP post with following http header
-// grant_type: password
-// client_Id:your_clientid
-// username: yourresourceuser
-// password: your_resourceuser_password
-// client_secret:your_clientsecret
-
-// You should get token like this as the http response
-// {
-//   "expires_in": 86399,
-//   "token_type": "bearer",
-//   "refresh_token": "UFXgxkXDVKNB-g8UY6XiKV3PXtlRDDYF6y6Br4bwLUxgZu8InaJl5JLpTZFBd2XnjDp5gby2wLwF2-UWAmvbbg",
-//   "access_token": "vZoyXmrY1C-aZaRdBStOo5Gcm3bLkOrWZwMU_HJhlm_IkrFK1cnytQdNyk62QRarGwZT5p9FmtGYE8jebd6gJw"
-// }
-
-// Save the token and used it for subsequent call. Eg.
-
-
-
-// https://stage-unified-api.ucsf.edu/general/sis/1.0/schools/85?access_token=AYQwy_oodGvyoPIjWfbYBGk9TDmpToVLizFSq-4PBrwCwHpfyrp0VMjeU942w3knUMzUbzFSW6qL3PN5vfwIng
-
-// Note the access_token shouldn’t be generated for each call but rather reused.
-
-// Refresh token can be used with current Oauth provider using
-// GET /oauth/1.0/access_token?refresh_token=FtF8VbpHRrgSt210iu6KxbIfK7UWAzbK5hDAexfGUgO1Nlxe-1abi4b7PT9PcJHCWDuRjoXDSgAGgWeSXodqpA HTTP/1.1
-// Host: stage-unified-api.ucsf.edu
-// grant_type: refresh_token
-// client_Id:yourclientid
-// client_secret:yourclientsecret
-
-// Authenticating from the website
-// https://unified-api.ucsf.edu/oauth/1.0/authorize?scope=&client_id=b8cbf4743b0c4d7f88857f8c232d43b5&redirect_uri=https%3A%2F%2Fanypoint.mulesoft.com%2Fapiplatform%2Fucsf%2Fauthentication%2Foauth2.html&response_type=token
-
-
 class sis_client extends curl {
     /** @const API URL */
     const API_URL = '/general/sis/1.0';
@@ -1497,116 +1444,6 @@ class sis_client extends curl {
 
         return $result;
     }
-
-    // testing functions
-    private function get_sample_terms() {
-        $str = <<<'EOS'
-{
-  "data": [
-    {
-      "id": "FA07",
-      "name": "Fall 2007     ",
-      "year": 2007,
-      "termStartDate": "2007-09-12",
-      "termEndDate": "2007-12-31",
-      "fileDateForEnrollment": {
-        "enrollmentStart": "2007-09-13",
-        "enrollmentEnd": "2007-09-28"
-      }
-    },
-    {
-      "id": "FA05",
-      "name": "Fall 2005     ",
-      "year": 2005,
-      "termStartDate": "2005-09-12",
-      "termEndDate": "2005-12-31",
-      "fileDateForEnrollment": {
-        "enrollmentStart": "2005-09-19",
-        "enrollmentEnd": "2005-10-04"
-      }
-    },
-    {
-      "id": "FA10",
-      "name": "Fall 2010     ",
-      "year": 2010,
-      "termStartDate": "2010-09-08",
-      "termEndDate": "2010-12-31",
-      "fileDateForEnrollment": {
-        "enrollmentStart": "2010-09-08",
-        "enrollmentEnd": "2010-10-08"
-      }
-    },
-    {
-      "id": "FA08",
-      "name": "Fall 2008     ",
-      "year": 2008,
-      "termStartDate": "2008-09-10",
-      "termEndDate": "2008-12-30",
-      "fileDateForEnrollment": {
-        "enrollmentStart": "2008-09-15",
-        "enrollmentEnd": "2008-10-10"
-      }
-    },
-    {
-      "id": "FA09",
-      "name": "Fall 2009     ",
-      "year": 2009,
-      "termStartDate": "2009-09-09",
-      "termEndDate": "2009-12-31",
-      "fileDateForEnrollment": {
-        "enrollmentStart": "2009-09-09",
-        "enrollmentEnd": "2009-10-09"
-      }
-    },
-    {
-      "id": "FA03",
-      "name": "Fall 2003     ",
-      "year": 2003,
-      "termStartDate": "2003-08-27",
-      "termEndDate": "2003-12-31",
-      "fileDateForEnrollment": null
-    },
-    {
-      "id": "FA04",
-      "name": "Fall 2004     ",
-      "year": 2004,
-      "termStartDate": "2004-09-06",
-      "termEndDate": "2004-12-31",
-      "fileDateForEnrollment": null
-    },
-    {
-      "id": "FA00",
-      "name": "Fall 2000     ",
-      "year": 2000,
-      "termStartDate": "2000-09-02",
-      "termEndDate": "2000-12-31",
-      "fileDateForEnrollment": null
-    },
-    {
-      "id": "FA01",
-      "name": "Fall 2001     ",
-      "year": 2001,
-      "termStartDate": "2001-09-06",
-      "termEndDate": "2001-12-31",
-      "fileDateForEnrollment": null
-    },
-    {
-      "id": "FA02",
-      "name": "Fall 2002     ",
-      "year": 2002,
-      "termStartDate": "2002-08-28",
-      "termEndDate": "2002-12-31",
-      "fileDateForEnrollment": null
-    }
-  ]
-}
-EOS;
-
-        $obj = $this->parse_result($str);
-        return $obj->data;
-    }
-}
-
 
 /**
  * OAuth 2.0 client for Ucsfsis Services
