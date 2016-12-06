@@ -51,19 +51,26 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
             // Append details of selected course (disable for now until we implement this in edit_form.php
             // if (!empty($instance->customtext1)) {
             //     $iname .= '<br /><small>'.$instance->customtext1.'</small><br />';
-            // }
+            // } else {
+            //     $http = $this->get_http_client();
+            //     if ($http->is_logged_in()) {
+            //         $course = $http->get_course($instance->customint1);
+            //         if (!empty($course)) {
+            //             $deptid = trim($course->departmentForBelongTo);
+            //             $courseNumber = trim($course->courseNumber);
+            //             $courseName = trim($course->name);
+            //             $term = trim($course->term);
+            //             $text1 = "<strong>{$deptid}{$courseNumber} {$courseName}</strong>, {$term}";
 
-            // Experiment: displaying course name...performance hit on the listing enrolled students page.
-            // $http = $this->get_http_client();
-            // $c = $http->get_object('/courses/'.$instance->customint1);
-            // if (!empty($c)) {
-            //     // $iname .= '<br /><pre>'.print_r($c,1).'</pre>';
-            //     // $iname .= '<br /><em><strong>'.trim($c->subjectForCorrespondTo).' '.trim($c->courseNumber).':</strong> '.trim($c->name).' ('.$c->term.')</em>';
-            //     // $iname .= '<br /><small><em><strong>'.trim($c->departmentForBelongTo).trim($c->courseNumber).':</strong> '.trim($c->name).' ('.$c->term.')</em></small><br />';
-            //     // $iname .= '<br /><em>'.trim($c->departmentForBelongTo).trim($c->courseNumber).' '.trim($c->name).', '.$c->term.'</em><br />';
-            //     // $iname .= '<br /><small><strong>'.trim($c->departmentForBelongTo).trim($c->courseNumber).' '.trim($c->name).'</strong> <em>(Joe Smith)</em>, '.$c->term.'</small><br />';
-            //     $iname .= '<br /><small><strong>'.trim($c->departmentForBelongTo).trim($c->courseNumber).' '.trim($c->name).'</strong>, '.$c->term.'<br /><em>Instructor: </em>Joe Smith</small><br />';
-            //     // $iname .= '<br /><em><small>('.trim($c->term).') '.trim($c->departmentForBelongTo).trim($c->courseNumber).' '.trim($c->name).' (Joe Smith)</small></em><br />';
+            //             // Save customtext1
+            //             $inst = new stdClass;
+            //             $inst->id = $instance->id;
+            //             $inst->customtext1 = $text1;
+            //             $DB->update_record('enrol', $inst);
+
+            //             $iname .= '<br /><small>'.$text1.'</small><br />';
+            //         }
+            //     }
             // }
         }
         return $iname;
@@ -129,6 +136,7 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
 
     /**
      * Returns edit icons for the page with list of instances.
+     *
      * @param stdClass $instance
      * @return array
      */
@@ -185,7 +193,7 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
     }
 
     /**
-     * Sorry, we do not want to show paths in cron output.
+     * Sorry, we do not want to show paths in the output.
      *
      * @param string $filepath
      * @return string
@@ -205,137 +213,6 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
 
         return $disclosefile;
     }
-
-    /**
-     * Process flatfile.
-     * @param progress_trace $trace
-     * @return bool true if any data processed, false if not
-     */
-    protected function process_file(progress_trace $trace) {
-        global $CFG, $DB;
-
-        // We may need more memory here.
-        core_php_time_limit::raise();
-        raise_memory_limit(MEMORY_HUGE);
-
-        $filelocation = $this->get_config('location');
-
-        // @TODO Do we want a default location for LibCourse.del?
-        if (empty($filelocation)) {
-            // Default legacy location.
-            $filelocation = "$CFG->dataroot/sis/LibCourse.del";
-        }
-        $disclosefile = $this->obfuscate_filepath($filelocation);
-
-        if (!file_exists($filelocation)) {
-            $trace->output("SIS enrolments file not found: $disclosefile");
-            $trace->finished();
-            return false;
-        }
-        $trace->output("Processing SIS file enrolments from: $disclosefile ...");
-
-        $oldlineendings = ini_get('auto_detect_line_endings');
-        ini_set('auto_detect_line_endings', true);
-        $filecontent = file($filelocation);
-        ini_set('auto_detect_line_endings', $oldlineendings);
-
-        if ($filecontent === false) {
-            $trace->output("Failed to read SIS enrolments file: $disclosefile");
-            $trace->finished();
-            return false;
-        }
-
-        $content = array_map('str_getcsv', $filecontent);
-
-        // @TODO Implement import file to tables
-        if ($content !== false) {
-
-            $line = 0;
-            $lastupdatedtime = time();
-
-            foreach($content as $fields) {
-                $line++;
-
-                if (count($fields) < 9 or count($fields) > 10) {
-                    $trace->output("Line incorrectly formatted - ignoring $line", 1);
-                    continue;
-                }
-
-                $studentid = $fields[0];
-                $studentucsfid = $fields[1];
-                $term = $fields[2];
-                $subjectcode = $fields[3];
-                $coursenumber = $fields[4];
-                $subject = $fields[5];
-                $coursetitle = $fields[6];
-                $instructorcode = $fields[7];
-                $instructorid = $fields[8];
-                $instructorname = $fields[9];
-
-                $trace->output("$line: $fields[0], $fields[1], $fields[2], $fields[3], $fields[4], $fields[5], $fields[6], $fields[7], $fields[8], $fields[9]", 1);
-
-                // Save these values (above) into database tables.
-                $courseidnumber = str_replace(' ','_',$subject).'_'.$coursenumber.'_'.$term;
-
-                // Create or update enrolment table for student role
-                $record = $DB->get_record('enrol_ucsfsis_enrolment', array('courseuid'=>$courseidnumber, 'userid'=>$studentid, 'role'=>'student'));
-                if ($record !== false) {
-                    $record->lastupdated = $lastupdatedtime;
-                    $DB->update_record('enrol_ucsfsis_enrolment', $record);
-                } else {
-                    $record = new stdClass();
-                    $record->courseuid = $courseidnumber;
-                    $record->userid = $studentid;
-                    $record->role = "student";
-                    $record->timecreated = $record->lastupdated = $lastupdatedtime;
-                    $record->id = $DB->insert_record('enrol_ucsfsis_enrolment', $record);
-                }
-
-                // Create or update enrolment table for instructor role
-                $record = $DB->get_record('enrol_ucsfsis_enrolment', array('courseuid'=>$courseidnumber, 'userid'=>$instructorid, 'role'=>'instructor'));
-                if ($record !== false) {
-                    $record->lastupdated = $lastupdatedtime;
-                    $DB->update_record('enrol_ucsfsis_enrolment', $record);
-                } else {
-                    $record = new stdClass();
-                    $record->courseuid = $courseidnumber;
-                    $record->userid = $instructorid;
-                    $record->role = "instructor";
-                    $record->timecreated = $record->lastupdated = $lastupdatedtime;
-                    $record->id = $DB->insert_record('enrol_ucsfsis_enrolment', $record);
-                }
-            }
-
-            // Remove records that has not been updated
-            $DB->delete_records_select('enrol_ucsfsis_enrolment', "lastupdated < $lastupdatedtime");
-
-            unset($content);
-        }
-
-        // if (!unlink($filelocation)) {
-        //     $eventdata = new stdClass();
-        //     $eventdata->modulename        = 'moodle';
-        //     $eventdata->component         = 'enrol_ucsfsis';
-        //     $eventdata->name              = 'ucsfsis_enrolment';
-        //     $eventdata->userfrom          = get_admin();
-        //     $eventdata->userto            = get_admin();
-        //     $eventdata->subject           = get_string('filelockedmailsubject', 'enrol_flatfile');
-        //     $eventdata->fullmessage       = get_string('filelockedmail', 'enrol_flatfile', $filelocation);
-        //     $eventdata->fullmessageformat = FORMAT_PLAIN;
-        //     $eventdata->fullmessagehtml   = '';
-        //     $eventdata->smallmessage      = '';
-        //     message_send($eventdata);
-        //     $trace->output("Error deleting enrolment file: $disclosefile", 1);
-        // } else {
-        //     $trace->output("Deleted enrolment file", 1);
-        // }
-
-        $trace->output("...finished enrolment file processing.");
-        $trace->finished();
-
-        return true;
-    }
-
 
     /**
      * Fetch enrolments and course information from feed file.
@@ -415,6 +292,7 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
             }
             unset($content);
         }
+
         return $courses;
     }
 
@@ -455,14 +333,6 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
         $trace->output("Processing SIS file enrolments from: $disclosefile ...");
 
         $courses = $this->get_enrolments_from_feed_file($filelocation, $trace);
-
-        // $instructors = array();
-        // foreach ($courses as $courseid => $course) {
-        //     foreach ($course['instructors'] as $id => $instr) {
-        //         $instructors[$id] = $instr;
-        //     }
-        // }
-        // $trace->output("List all instructors: ".print_r($instructors,1));
 
         foreach ($courses as $courseid => $course) {
             $idnumber = $course['idnumber'];
@@ -538,83 +408,186 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
 
     public function get_http_client() {
         if (empty($this->_sisclient)) {
-            $this->_sisclient = new sis_client(
-                $this->get_config('host_url'),
-                $this->get_config('resourceid'),
-                $this->get_config('resourcepassword'),
+            $this->_sisclient = new ucsfsis_oauth_client(
                 $this->get_config('clientid'),
                 $this->get_config('secret'),
-                $this->get_config('accesstoken', null),
-                $this->get_config('refreshtoken', null),
-                $this->get_config('accesstokenexpiretime', 0),
-                "enrol_".$this->get_name()
+                $this->get_config('resourceid'),
+                $this->get_config('resourcepassword'),
+                $this->get_config('host_url'),
+                true
             );
         }
         return $this->_sisclient;
     }
 
     /**
+     * Put commonly used cache data in here, so that it can be prefetched by the cron
+     */
+    public function prefetch_common_cache_data() {
+        $prefetch_term_num = 5;
+        $oauth = $this->get_http_client();
+
+        if ($oauth->is_logged_in()) {
+            // Terms data
+            $terms = $oauth->get_active_terms();
+            if (!empty($terms)) {
+                foreach ($terms as $key => $term) {
+                    if ($key > $prefetch_term_num) {
+                        break;
+                    }
+                    $result = $oauth->get_subjects_in_term($term->id);
+                    $result = $oauth->get_courses_in_term($term->id);
+                }
+            }
+        }
+    }
+
+    /**
      * Test plugin settings, print info to output.
      */
     public function test_settings() {
-        // $this->test_apis();
-
-        // Debugging
         global $CFG, $OUTPUT;
-        $returnurl = new moodle_url('/enrol/ucsfsis/oauth_callback.php');
-        $returnurl->param('callback', 'yes');
-        // $returnurl->param('repo_id', $this->id);
-        $returnurl->param('sesskey', sesskey());
+        // NOTE: this is not localised intentionally, admins are supposed to understand English at least a bit...
 
-        // $clientid = $this->get_config('clientid');
-        // $secret = $this->get_config('secret');
+        raise_memory_limit(MEMORY_HUGE);
 
-        $clientid = '9ff1baa0198748fc91ff717d38063799';
-        $secret = 'e09f3c79e4a44d0e98475BE2B9D0661A';
+        $this->load_config();
 
-        $oauth = new ucsfsis_oauth($clientid, $secret, $returnurl, '');
+        $hosturl = $this->get_config('host_url');
+        if (empty($hosturl)) {
+            echo $OUTPUT->notification('Host URL not specified, use default.','notifysuccess');
+        }
 
-        $url = $oauth->get_login_url();
+        $resourceid = $this->get_config('resourceid');
+        $resourcepw = $this->get_config('resourcepassword');
 
-        // if ($this->options['ajax']) {
-        //     $popup = new stdClass();
-        //     $popup->type = 'popup';
-        //     $popup->url = $url->out(false);
-        //     return array('login' => array($popup));
-        // } else {
-            echo '<a target="_blank" href="'.$url->out(false).'">'.get_string('login', 'repository').'</a>';
-        // }
+        if (empty($resourceid)) {
+            echo $OUTPUT->notification('Resource ID not specified.', 'notifyproblem');
+        }
 
+        if (empty($resourcepw)) {
+            echo $OUTPUT->notification('Resource password not specified.', 'notifyproblem');
+        }
 
-        // $ret = $oauth->is_logged_in();
+        if (empty($resourceid) and empty($resourcepw)) {
+            return;
+        }
 
-        // var_dump($ret);
+        $clientid = $this->get_config('clientid');
+        $secret = $this->get_config('secret');
+
+        if (empty($clientid)) {
+            echo $OUTPUT->notification('Client ID not specified.', 'notifyproblem');
+        }
+
+        if (empty($secret)) {
+            echo $OUTPUT->notification('Client secret not specified.', 'notifyproblem');
+        }
+
+        if (empty($clientid) and empty($secret)) {
+            return;
+        }
+
+        // Set up for debugging
+        $olddebug = $CFG->debug;
+        $olddisplay = ini_get('display_errors');
+        ini_set('display_errors', '1');
+        $CFG->debug = DEBUG_DEVELOPER;
+        error_reporting($CFG->debug);
+
+        // Testing
+        $oauth = new ucsfsis_oauth_client($clientid, $secret, $resourceid, $resourcepw, $hosturl, true);
+
+        $loggedin = $oauth->is_logged_in();
+        if ($loggedin) {
+            // Log out and try log in again.
+            $oauth->log_out();
+            $loggedin = $oauth->is_logged_in();
+        }
+
+        if (!$loggedin) {
+            echo $OUTPUT->notification('Failed to log in with the specified settings', 'notifyproblem');
+            return;
+        }
+
+        $atoken = $oauth->get_accesstoken();
+        if (empty($atoken)) {
+            echo $OUTPUT->notification('Failed to obtain an access token.', 'notifyproblem');
+            return;
+        }
+
+        $rtoken = $oauth->get_refreshtoken();
+        if (empty($rtoken)) {
+            echo $OUTPUT->notification('Failed to obtain a refresh token.', 'notifyproblem');
+            return;
+        }
+
+        echo $OUTPUT->notification('Logged in successfully to obtain an access token.', 'notifysuccess');
+
+        // Get some data...
+        echo "<pre>";
+        if (empty($hosturl)) {
+            $hosturl = ucsfsis_oauth_client::DEFAULT_HOST;
+        }
+        // $result = $oauth->get($hosturl.'/general/sis/1.0/courses/1919');
+        // echo "RESULT get('/courses/1919') = <br />";
+        // var_dump($result);
+
+        // // $result = $oauth->get_course('1919');
+        // $result = $oauth->get_course('44980');
+        // echo "RESULT get_course('44980') = <br />";
+        // var_dump($result);
+
+        $result = $oauth->get_all_data($hosturl.'/general/sis/1.0/schools');
+        echo "School Data: <br />";
+        var_dump($result);
+
+        // $result = $oauth->get_all_data($hosturl.'/general/sis/1.0/terms');
+        // $result = $oauth->get_all_data($hosturl.'/general/sis/1.0/terms?fields=id,name,fileDateForEnrollment&sort=-termStartDate');
+        $terms = $oauth->get_active_terms();
+        echo "Active Term Data: <br />";
+        var_dump($terms);
+
+        $result = $oauth->get_all_data($hosturl.'/general/sis/1.0/departments');
+        echo "Department Data = <br />";
+        var_dump($result);
+
+        // Actual requests used in code (and cache them).
+        if (!empty($terms)) {
+            foreach ($terms as $key => $term) {
+                if ($key > 3) {
+                    break;
+                }
+                $result = $oauth->get_subjects_in_term($term->id);
+                echo "Subject Data in Term " . $term->name;
+                var_dump($result);
+                $result = $oauth->get_courses_in_term($term->id);
+                echo "Course Data in Term " . $term->name;
+                var_dump($result);
+            }
+        }
+
+        echo "</pre>";
+
+        $CFG->debug = $olddebug;
+        ini_set('display_errors', $olddisplay);
+        error_reporting($CFG->debug);
     }
 
     /**
      * Check enrollment status from API against feed
      */
     private function test_check_enrollment_status_against_feed_file() {
-        // $this->test_apis();
-
         // Debugging
         global $CFG, $OUTPUT;
 
         $this->load_config();
         $api = $this->get_http_client();
 
-        // $result = $api->get_objects('/courseEnrollments?courseId=8041');
-        // $result = $api->get_objects('/courseEnrollments?courseId=3989');
-        // $result = $api->get_objects('/courseEnrollments?courseId=8041', null, null, array('status'=>'A'));
-        // $result = $api->get_objects('/courseEnrollments?courseId=8041', null, null, array('status'=>'A'));
-        // $results = $api->get_objects('/courseEnrollments?courseId=11542');
-        // $users = array();
-        // foreach ($results as $result) {
-        //     if (!empty($result->student) && !empty($result->student->empno)) {
-        //         $users[$result->student->empno][] = $result->status;
-        //     }
-        // }
-        // echo $OUTPUT->notification("<pre>".print_r($users,1)."</pre>");
+        if (!$api->is_logged_in()) {
+            echo $OUTPUT->notification('Oauth authentication failed.  Unable to obtain an access token.', 'notifyproblem');
+            return;
+        }
 
         raise_memory_limit(MEMORY_HUGE);
         $trace = new text_progress_trace();
@@ -622,7 +595,9 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
         $trace->finished();
 
         $issueCourses = array();
-        $courses = $api->get_objects('/terms/FA16/courses');
+
+        // We are testing this on staging, and FA16 is the only with valid enrollment during development phase.
+        $courses = $api->get_courses_in_term('FA16');
         foreach ($courses as $course) {
             $enrollments = $api->get_objects('/courseEnrollments?courseId='.trim($course->id));
             $users = array();
@@ -654,240 +629,6 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
             }
         }
         echo $OUTPUT->notification("<pre>".print_r($issueCourses,1)."</pre>");
-    }
-
-    public function test_apis() {
-        global $CFG, $OUTPUT;
-
-        // NOTE: this is not localised intentionally, admins are supposed to understand English at least a bit...
-        raise_memory_limit(MEMORY_HUGE);
-
-        $this->load_config();
-
-        // Check API settings
-        $hosturl = $this->get_config('host_url');
-        $clientid = $this->get_config('clientid');
-        $secret = $this->get_config('secret');
-
-        if (empty($hosturl)) {
-            echo $OUTPUT->notification('API Host URL not specified.', 'notifyproblem');
-        } else {
-            $api = $this->get_http_client();
-
-            // $result = $api->get_objects('/terms', null, '-termStartDate', array( 'year'=>['2015','2016']));
-            // $result = $api->get_objects('/terms', null, '-termStartDate', array( 'year'=>['2015','2016']), array('fileDateForEnrollment'=>null));
-            $result = $api->get_objects('/terms', null, '-termStartDate', null, array('fileDateForEnrollment'=>null));
-            echo $OUTPUT->notification("Quick test:<pre>".print_r($result,true)."</pre>");
-
-            // @TEST setup
-            $urls = array(
-                "/schools",
-                "/departments",
-                "/terms",
-                "/subjects",
-                "/courses",
-                "/courseEnrollments",
-                "/instructorsWithEnrolledStudents"
-            );
-
-            // @TEST for limit and offsets
-            foreach ($urls as $url) {
-                $this->test_usinglimitandoffsetreturnsamelist($url,$api);
-            }
-
-            // @TEST for /someapi/1 should be same as /someapi?id=1
-
-            // @TODO Check for duplicates like in /instructorsWithEnrolledStudents?courseId={course_id}.
-
-            /**
-             * Courses API
-             */
-            // $url = '/courseEnrollments';
-            // $objects = $this->testapiurlinvalid($url.'?courseId=somerandomnumber',$api);
-            // $objects = $this->testapiurlinvalid($url.'?courseId=999999',$api);
-
-            // $url = 'instructorsWithEnrolledStudents';
-            // $objects = $this->testapiurlinvalid($url.'?courseId=somerandomnumber',$api);
-            // $objects = $this->testapiurlinvalid($url.'?courseId=999999',$api);
-
-            // $url = '/courses';
-            // $objects = $this->testapiurl($url,$api);
-
-            // foreach ($objects as $obj) {
-            //     $retobj = $this->testapiurl($url.'/'.trim($obj->id), $api);
-            //     $retobj = $this->testapiurl($url.'/'.trim($obj->id).'/instructors', $api);
-            //     $retobj = $this->testapiurl('/courseEnrollments?courseId='.trim($obj->id), $api);
-            //     $retobj = $this->testapiurl('/instructorsWithEnrolledStudents?courseId='.trim($obj->id), $api);
-            // }
-
-
-            // $obj = $this->testapiurlinvalid($url.'/somerandomstring', $api);
-            // $obj = $this->testapiurlinvalid($url.'/somerandomstring/instructors', $api);
-            // $obj = $this->testapiurlinvalid($url.'/99999', $api);
-            // $obj = $this->testapiurlinvalid($url.'/99999/instructors', $api);
-
-
-            /*
-             * Subjects API
-             */
-            // // No /subjects API
-            $url = '/subjects';
-
-            // $obj = $this->testapiurlinvalid($url.'/1', $api);
-            // $obj = $this->testapiurlinvalid($url.'/01', $api);
-            // $obj = $this->testapiurlinvalid($url.'/001', $api);
-            // $obj = $this->testapiurlinvalid($url.'/N', $api);
-            // $obj = $this->testapiurlinvalid($url.'/PT', $api);
-            // $obj = $this->testapiurlinvalid($url.'/CL PHARM', $api);
-            // $obj = $this->testapiurlinvalid($url.'/CL%20PHARM', $api);
-            // $obj = $this->testapiurlinvalid($url.'/NEUROLOGY', $api);
-            // $obj = $this->testapiurlinvalid('/departments/NE', $api);
-
-
-            // $objects = $this->testapiurlinvalid($url,$api);
-            // // foreach ($objects as $obj) {
-            // //     $retobj = $this->testapiurl($url.'/'.trim($obj->id), $api);
-            // // }
-            // $obj = $this->testapiurlinvalid($url.'/somerandomstring', $api);
-            // $obj = $this->testapiurlinvalid($url.'/99999', $api);
-
-            /*
-             * Terms API
-             */
-            // $url = '/terms/SP16/courses';
-            // $obj = $this->testapiurlinvalid($url, $api);
-
-            // $url = '/terms/ST16/courses';
-            // $obj = $this->testapiurlinvalid($url, $api);
-
-            // $url = '/terms/SP16/subjects';
-            // $obj = $this->testapiurlinvalid($url, $api);
-
-            // $url = '/terms/ST16/subjects';
-            // $obj = $this->testapiurlinvalid($url, $api);
-
-            // $url = '/terms?sort=-termStartDate&year=2016';
-
-            // @BUG Is this supposed to work?
-            $url = '/terms?year=2016';
-            $objects = $this->testapiurl($url,$api);
-
-            // $url = '/terms';
-            // $objects = $this->testapiurl($url,$api);
-            // foreach ($objects as $obj) {
-            //     $retobj = $this->testapiurl($url.'/'.trim($obj->id), $api);
-            //     $subjects = $this->testapiurl($url.'/'.trim($obj->id).'/subjects', $api);
-            //     foreach ($subjects as $subject) {
-            //         $retobj = $this->testapiurl('/subjects/'.trim($subjects->id), $api);
-            //     }
-            //     $courses = $this->testapiurl($url.'/'.trim($obj->id).'/courses', $api);
-            //     foreach ($courses as $course) {
-            //         $retobj = $this->testapiurl('/courses/'.trim($courses->id), $api);
-            //     }
-            // }
-            // $obj = $this->testapiurlinvalid($url.'/somerandomstring', $api);
-            // $obj = $this->testapiurlinvalid($url.'/somerandomstring/subjects', $api);
-            // $obj = $this->testapiurlinvalid($url.'/somerandomstring/courses', $api);
-            // $obj = $this->testapiurlinvalid($url.'/99999', $api);
-            // $obj = $this->testapiurlinvalid($url.'/99999/subjects', $api);
-            // $obj = $this->testapiurlinvalid($url.'/99999/courses', $api);
-            $url = '/departments';
-            $this->test_get_objectsshouldreturnssomething($url, $api);
-
-            $url = '/terms/WI16/subjects';
-            $this->test_get_objectsshouldreturnssomething($url, $api);
-
-
-            /*
-             * Departments API
-             */
-            // $url = '/departments/G';
-            // $objects = $this->testapiurlinvalid($url,$api);
-            // $url = '/departments/U ';
-            // $objects = $this->testapiurlinvalid($url,$api);
-            // $url = '/departments/P ';
-            // $objects = $this->testapiurlinvalid($url,$api);
-            // $url = '/departments/T';
-            // $objects = $this->testapiurl($url,$api);
-
-            // // @TODO More testings on '/departments/SH', which has an &amp; in the 'name'
-            // // @TODO More testings on '/departments/PB', which has an &amp; in the 'shortname'
-            // //       'PS&PG PROG'
-            // // @TODO More testings on '/departments/EB', which has an &amp; in the 'shortname'
-            // //       'EPID & BIO'
-            // // @TODO More testings on '/departments/G', which has an &amp; in the 'shortname'
-
-            // $url = '/departments';
-            // $objects = $this->testapiurl($url,$api);
-            // foreach ($objects as $obj) {
-            //     try {
-            //         // @BUG Need to trim ID
-            //         $retobj = $this->testapiurl($url.'/'.trim($obj->id), $api);
-            //     } catch (Exception $e) {
-            //         echo $OUTPUT->notification("ERROR: ".$url.'/'.trim($obj->id). ": ".$e->getMessage());
-            //         // sleep(90);
-            //         // $retobj = $this->testapiurl($url.'/'.trim($obj->id), $api);
-            //         try {
-            //             $retobj = $this->testapiurlinvalid($url.'/'.trim($obj->id), $api);
-            //         } catch (Exception $e) {
-            //             echo $OUTPUT->notification("ERROR: ".$url.'/'.trim($obj->id). ": ".$e->getMessage());
-            //         }
-            //     }
-            // }
-            // $obj = $this->testapiurlinvalid($url.'/somerandomstring', $api);
-            // $obj = $this->testapiurlinvalid($url.'/99999', $api);
-
-            /*
-             * Schools API
-             */
-            $url = '/schools';
-
-            // @BUG id = '#' show up in the second url, inconsistent list
-            $objects = $this->testapiurlinvalid($url, $api);
-            $objects = $this->testapiurlinvalid($url.'?sort=name', $api);
-            // // Practical use:
-            // $objects = $this->testapiurl($url.'?limit=6&offset=2&fields=name', $api);
-            // $objects = $this->testapiurl($url.'?limit=6&offset=2&fields=name&sort=name', $api);
-
-            // $objects = $this->testapiurl($url.'?limit=2', $api);
-            // $objects = $this->testapiurl($url.'?limit=2&offset=3', $api);
-            // $objects = $this->testapiurl($url.'?limit=2&offset=5', $api);
-            // $objects = $this->testapiurl($url.'?limit=2&offset=7', $api);
-            // $objects = $this->testapiurl($url.'?limit=2&offset=9', $api);
-            // $objects = $this->testapiurl($url.'?limit=6&offset=2&fields=name', $api);
-            // $objects = $this->testapiurl($url.'?limit=6&offset=2&fields=name&sort=name', $api);
-            // $objects = $this->testapiurl($url.'?limit=6&offset=2&sort=-name', $api);
-
-            $objects = $this->testapiurl($url, $api);
-
-            foreach ($objects as $obj) {
-                try {  // try with raw id
-                    $retobj = $this->testapiurl($url.'/'.$obj->id, $api);
-                } catch (Exception $e) {
-                    echo $OUTPUT->notification("ERROR: ". $e->getMessage() . "<br /> Trying with trim($obj->id).");
-                    $retobj = $this->testapiurl($url.'/'.trim($obj->id), $api);
-                }
-            }
-            // $obj = $this->testapiurlinvalid($url.'/1', $api);
-            // $obj = $this->testapiurlinvalid($url.'/2', $api);
-            // $obj = $this->testapiurlinvalid($url.'/somerandomstring', $api);
-            // $obj = $this->testapiurlinvalid($url.'/12345', $api);
-
-            // // test for /school/{school_id}/departments
-            // foreach ($objects as $obj) {
-            //     try {  // try with raw id
-            //         $retobj = $this->testapiurl($url.'/'.$obj->id.'/departments', $api);
-            //     } catch (Exception $e) {
-            //         echo $OUTPUT->notification("ERROR: ". $e->getMessage() . "<br /> Trying with trim($obj->id).");
-            //         $retobj = $this->testapiurl($url.'/'.trim($obj->id).'/departments', $api);
-            //     }
-            // }
-            // $obj = $this->testapiurlinvalid($url.'/1/departments', $api);
-            // $obj = $this->testapiurlinvalid($url.'/2/departments', $api);
-            // $obj = $this->testapiurlinvalid($url.'/somerandomstring/departments', $api);
-            // $obj = $this->testapiurlinvalid($url.'/12345/departments', $api);
-        }
-        return;
     }
 
     public function test_feedfile() {
@@ -977,7 +718,7 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
         }
 
         // Check CSV file - courses
-        $coursefilelocation = "/home/moodle/moodledata/LibCoursesAllOffered.del";
+        $coursefilelocation = "/moodledata/LibCoursesAllOffered.del";
 
         ini_set('auto_detect_line_endings', true);
         $filecontent = file($coursefilelocation);
@@ -1048,7 +789,7 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
         ob_end_flush();
     }
 
-    private function testapiurl($url, $api) {
+    private function test_apiurl($url, $api) {
         global $CFG, $OUTPUT;
         echo $OUTPUT->notification("Testing '$url'", 'notifyproblem');
         // check for consistency for arrays
@@ -1067,7 +808,7 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
         return $obj;
     }
 
-    private function testapiurlinvalid($url, $api) {
+    private function test_apiurlinvalid($url, $api) {
         global $CFG, $OUTPUT;
         echo $OUTPUT->notification("Testing '$url'", 'notifyproblem');
         $obj = $api->get($url);
@@ -1143,321 +884,35 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
 
 }
 
-class sis_client extends curl {
+/**
+ * OAuth 2.0 client for UCSF SIS Enrolment Services
+ *
+ * @package   enrol_ucsfsis
+ */
+class ucsfsis_oauth_client extends oauth2_client {
     /** @const API URL */
+    const DEFAULT_HOST = 'https://unified-api.ucsf.edu';
     const API_URL = '/general/sis/1.0';
     const TOKEN_URL = '/oauth/1.0/access_token';
     const AUTH_URL = '/oauth/1.0/authorize';
 
-    private $_host = '';
-    private $_userid = '';
-    private $_userpw = '';
-    private $_clientid = '';
-    private $_secret = '';
-    private $_accesstoken = null;
-    private $_refreshtoken = null;
-    private $_expires_on = 0;
-    private $_pluginname = '';
+    /** @var string resource username */
+    private $base_url = self::DEFAULT_HOST;
+    /** @var string resource username */
+    private $username = '';
+    /** @var string resource password */
+    private $password = '';
+    /** @var string refresh token */
+    private $refreshtoken = '';
+    /** @var bool Caches http request contents that do not change often like schools, terms, departments, subjects...etc */
+    public  $longer_cache = false;    // Cache for 24 hours.
 
-
-    public function __construct($host, $userid, $userpw, $clientid, $clientsecret, $accesstoken = null, $refreshtoken = null, $expiretime = 0, $pluginname = '') {
-        parent::__construct();
-
-        $this->_host = $host;
-        $this->_userid = $userid;
-        $this->_userpw = $userpw;
-        $this->_clientid = $clientid;
-        $this->_secret = $clientsecret;
-        $this->_accesstoken = $accesstoken;
-        $this->_refreshtoken = $refreshtoken;
-        $this->_expires_on = $expiretime;
-        $this->_pluginname = $pluginname;
-
-        // echo "What's the current state: <pre>".print_r($this, true). "</pre>";
-        if ($this->_expires_on < time()) {
-            $this->_accesstoken = null;    // clear the current token since it's already expired.
-
-            if (!empty($this->_refreshtoken)) {
-                $this->refreshToken();
-                $this->saveToken();
-            }
-
-            if (empty($this->_accesstoken)) {
-                $this->createToken();
-                $this->saveToken();
-            }
-        }
-    }
-
-    private function refreshToken() {
-        $this->resetHeader();
-        $this->setHeader( 'grant_type:refresh_token' );
-        $this->setHeader( 'client_id:'.$this->_clientid );
-        $this->setHeader( 'client_secret:'.$this->_secret );
-
-        $currenttime = time();
-        $result = parent::get($this->_host . self::TOKEN_URL ."?refresh_token=".$this->_refreshtoken);
-        $parsed_result = $this->parse_result($result);
-
-        if (!empty($parsed_result->access_token)) {
-            $this->_accesstoken = $parsed_result->access_token;
-            $this->_refreshtoken = $parsed_result->refresh_token;
-            $this->_expires_on = $currenttime + $parsed_result->expires_in;
-        }
-        $this->saveToken();
-        return $result;
-    }
-
-    private function createToken() {
-        $this->resetHeader();
-        $this->setHeader( 'grant_type:password' );
-        $this->setHeader( 'username:'.$this->_userid );
-        $this->setHeader( 'password:'.$this->_userpw );
-        $this->setHeader( 'client_id:'.$this->_clientid );
-        $this->setHeader( 'client_secret:'.$this->_secret );
-
-        $currenttime = time();
-        $result = parent::get($this->_host . self::TOKEN_URL);
-        $parsed_result = $this->parse_result($result);
-
-        if (!empty($parsed_result->access_token)) {
-            $this->_accesstoken = $parsed_result->access_token;
-            $this->_refreshtoken = $parsed_result->refresh_token;
-            $this->_expires_on = $currenttime + $parsed_result->expires_in;
-        }
-        return $result;
-    }
-
-    private function saveToken() {
-        global $CFG;
-
-        // echo "Saving token: <pre>".print_r($this, true). "</pre>";
-        if (!empty($this->_pluginname)) {
-            require_once($CFG->libdir . '/moodlelib.php');
-            set_config('accesstoken', $this->_accesstoken, $this->_pluginname);
-            set_config('refreshtoken', $this->_refreshtoken, $this->_pluginname);
-            set_config('accesstokenexpiretime', $this->_expires_on, $this->_pluginname);
-        }
-        // echo "Saved token: <pre>".print_r($this, true). "</pre>";
-    }
-
-    // @param $filters array of filters like, array('id' => [1,2,3,4,5], 'lastname' = 'Smith')
-    // @param $not     array of not filters, fields that don't match items in this array
-
-    public function get_objects($collection_name, $fields=[], $sorts=[], $filters=[], $not=[]) {
-
-        // @BUG OK, using $filters does not work yet
-        // $all = $this->getallobj($collection_name, $fields, $sorts, $filters);
-        $all = $this->getallobj($collection_name, $fields, $sorts);
-        $retobj = array();
-
-        if (!empty($filters)) {
-            foreach ($all as $obj) {
-                if (is_array($filters)) {
-                    foreach ($filters as $field=>$filter) {
-                        if (is_array($filter)) {
-                            foreach ($filter as $match) {
-                                if ($obj->$field == $match) {
-                                    $retobj[] = $obj;
-                                    break;
-                                }
-                            }
-                        } else {
-                            if ($obj->$field == $filter) {
-                                $retobj[] = $obj;
-                            }
-                        }
-                    }
-                }
-            }
-        } else {
-            $retobj = $all;
-        }
-
-        $all = $retobj;
-        $retobj = array();
-
-        if (!empty($not)) {
-            foreach ($all as $obj) {
-                if (is_array($not)) {
-                    foreach ($not as $field=>$filter) {
-                        if (is_array($filter)) {
-                            $found = false;
-                            foreach ($filter as $match) {
-                                if ($obj->$field == $match) {
-                                    $found = true;
-                                    break;
-                                }
-                            }
-                            if (!$found) {
-                                $retobj[] = $obj;
-                            }
-                        } else {
-                            if ($obj->$field != $filter) {
-                                $retobj[] = $obj;
-                            }
-                        }
-                    }
-                }
-            }
-        } else {
-            $retobj = $all;
-        }
-
-        return $retobj;
-    }
-
-    public function getallobj($uri, $fields = array(), $sorts = array(), $filters = array()) {
-        if ($this->_expires_on < time()) {
-            $this->refreshToken();
-        }
-        $url = $this->_host . self::API_URL . $uri;
-        if (strstr($uri, "?") === false) {
-            $url .= '?access_token='.$this->_accesstoken;
-        } else {
-            $url .= '&access_token='.$this->_accesstoken;
-        }
-        $this->resetHeader();
-        $this->setHeader( 'client_id:'.$this->_clientid );
-        $this->setHeader( 'client_secret:'.$this->_secret );
-
-        $fieldstr = '';
-        if (!empty($fields)) {
-            if (is_array($fields)) {
-                $fieldstr = '&fields='.implode(',', $fields);
-            } else {
-                $fieldstr = '&fields='.$fields;
-            }
-        }
-
-        $sortstr = '';
-        if (!empty($sorts)) {
-            if (is_array($sorts)) {
-                $sortstr = '&sort='.implode(',', $sorts);
-            } else {
-                $sortstr = '&sort='.$sorts;
-            }
-        }
-
-        $filterstr = '';
-        if (!empty($filters)) {
-            if (is_array($filters)) {
-                $filterstr = "&".http_build_query($filters);
-            } else {
-                $filterstr = "&".$filters;
-            }
-        }
-        $limit = 100;
-        $offset = 0;
-        $retobj = array();
-        $obj = null;
-
-        do {
-            $finalurl = $url."&limit=$limit&offset=$offset".$fieldstr.$sortstr.$filterstr;
-
-            $result = parent::get($finalurl);
-            // Debugging
-            // echo "<pre>".$finalurl.": ".print_r($result,1)."</pre>";
-            $obj = $this->parse_result($result);
-            if ($offset > 1200) { // wait this is weird, can't be these many records.
-                echo "$finalurl: <pre>".print_r($obj,1)."</pre>";
-                break;
-            }
-
-            if (!empty($obj) && isset($obj->data) && !empty($obj->data)) {
-                $retobj = array_merge($retobj, $obj->data);
-                $offset += $limit;
-            } else {
-                $obj = null;
-            }
-        } while (!empty($obj));
-
-        return $retobj;
-    }
-
-    public function get_object($objectidurl, $fields = array()) {
-
-        return $this->getobj($objectidurl, $fields);
-    }
-
-    public function getobj($uri, $fields = array(), $sorts = array()) {
-        if ($this->_expires_on < time()) {
-            $this->refreshToken();
-        }
-        $url = $this->_host . self::API_URL . $uri;
-        if (strstr($uri, "?") === false) {
-            $url .= '?access_token='.$this->_accesstoken;
-        } else {
-            $url .= '&access_token='.$this->_accesstoken;
-        }
-        $this->resetHeader();
-        $this->setHeader( 'client_id:'.$this->_clientid );
-        $this->setHeader( 'client_secret:'.$this->_secret );
-        // echo "DEBUG: Getting '$url'";
-        $result = parent::get($url);
-        // echo "<pre>".print_r($result,true)."</pre>";
-        $obj = $this->parse_result($result);
-
-        if (!empty($obj) && isset($obj->data)) {
-            return $obj->data;
-        }
-        return null;
-    }
-
-    public function get($uri, $params = array(), $options = array()) {
-        if ($this->_expires_on < time()) {
-            $this->refreshToken();
-        }
-        $url = $this->_host . self::API_URL . $uri;
-        if (strstr($uri, "?") === false) {
-            $url .= '?access_token='.$this->_accesstoken;
-        } else {
-            $url .= '&access_token='.$this->_accesstoken;
-        }
-        $this->resetHeader();
-        $this->setHeader( 'client_id:'.$this->_clientid );
-        $this->setHeader( 'client_secret:'.$this->_secret );
-
-        $result = parent::get($url, $params, $options);
-        return $result;
-    }
-
-    /**
-     * A method to parse response to get token and token_secret
-     * @param string $str
-     * @return array
-     */
-    public function parse_result($str, $assoc = false) {
-        if (empty($str)) {
-            // throw new moodle_exception('empty string');
-            throw new moodle_exception('Empty string: <pre>'.print_r($this,true).'</pre>');
-        }
-        $result = json_decode($str,$assoc);
-
-        if (empty($result)) {
-            throw new moodle_exception('empty object');
-        }
-
-        if (isset($result->errors)) {
-            throw new moodle_exception(print_r($result->errors[0],true));
-        }
-
-        return $result;
-    }
-}
-
-/**
- * OAuth 2.0 client for Ucsfsis Services
- *
- * @package   enrol_ucsfsis
- */
-class ucsfsis_oauth extends oauth2_client {
     /**
      * Returns the auth url for OAuth 2.0 request
      * @return string the auth url
      */
     protected function auth_url() {
-        return 'https://unified-api.ucsf.edu/oauth/1.0/authorize';
+        return $this->base_url . self::AUTH_URL;
     }
 
     /**
@@ -1465,15 +920,621 @@ class ucsfsis_oauth extends oauth2_client {
      * @return string the auth url
      */
     protected function token_url() {
-        // return 'https://accounts.ucsfsis.com/o/oauth2/token';
-        return 'https://unified-api.ucsf.edu/oauth/1.0/access_token';
+        return $this->base_url . self::TOKEN_URL;
     }
 
     /**
-     * Resets headers and response for multiple requests
+     * Returns the url for resource API request
+     * @return string the resource API url
      */
-    public function reset_state() {
-        $this->header = array();
-        $this->response = array();
+    public function api_url() {
+        return $this->base_url . self::API_URL;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param string $clientid
+     * @param string $clientsecret
+     * @param moodle_url $returnurl
+     * @param string $scope
+     */
+    public function __construct($clientid, $clientsecret, $username, $password, $host = null, $enablecache = true) {
+
+        // Don't care what the returnurl is right now until we start implementing callbacks
+        $returnurl = new moodle_url(null);
+        $scope = '';
+
+        parent::__construct($clientid, $clientsecret, $returnurl, $scope);
+
+        $this->refreshtoken = $this->get_stored_refresh_token();
+        $this->username = $username;
+        $this->password = $password;
+
+        // We need these in the header all time.
+        $this->setHeader('client_id: '.$clientid);
+        $this->setHeader('client_secret: '.$clientsecret);
+
+        if (!empty($host)) {
+            $this->base_url = $host;
+        }
+
+        if ($enablecache) {
+            $this->cache = new sis_client_cache('enrol_ucsfsis');
+            $this->longer_cache = new sis_client_cache('enrol_ucsfsis/daily', 24 * 60 * 60);
+        }
+
+    }
+
+    /**
+     * Override this to login automatically.  Once SIS/Mutesoft has a callback implemented,
+     * we can remove this override.
+     *
+     * @return boolean true if logged in
+     */
+    public function is_logged_in() {
+        // Has the token expired?
+        $accesstoken = $this->get_accesstoken();
+        if (isset($accesstoken->expires) && time() >= $accesstoken->expires) {
+
+            // Try to obtain a new access token with a refresh token.
+            if (!empty($this->refreshtoken)) {
+                if ($this->refresh_token($this->refreshtoken)) {
+                    return true;
+                }
+            }
+            // Clear accesstoken since it already expired.
+            $this->log_out();
+        }
+
+        // We have a token so we are logged in.
+        if (!empty($this->get_accesstoken())) {
+            return true;
+        }
+
+        // If we've been passed then authorization code generated by the
+        // authorization server try and upgrade the token to an access token.
+        $code = optional_param('oauth2code', null, PARAM_RAW);
+        if ($code && $this->upgrade_token($code)) {
+            return true;
+        }
+
+        // Try log in using username and password to obtain access token
+        if (!empty($this->username) && !empty($this->password)) {
+            if ($this->log_in($this->username, $this->password)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Store access token between requests.
+     *
+     * @param stdClass|null $token token object to store or null to clear
+     */
+    protected function store_token($token) {
+        global $CFG, $SESSION;
+
+        require_once($CFG->libdir.'/moodlelib.php');
+
+        // $this->accesstoken is private, need to call parent to set it.
+        parent::store_token($token);
+
+        if ($token !== null) {
+            if (isset($token->token)) {
+                set_config('accesstoken', $token->token, 'enrol_ucsfsis');
+                set_config('accesstokenexpiretime', $token->expires, 'enrol_ucsfsis');
+            }
+            // Remove it from $SESSION, which was set by parent
+            $name = $this->get_tokenname();
+            unset($SESSION->{$name});
+        } else {
+            set_config('accesstoken', null, 'enrol_ucsfsis');
+            set_config('accesstokenexpiretime', null, 'enrol_ucsfsis');
+        }
+    }
+
+    /**
+     * Store access token between requests.
+     *
+     * @param stdClass|null $token token object to store or null to clear
+     */
+    protected function store_refresh_token($token) {
+        global $CFG;
+
+        require_once($CFG->libdir.'/moodlelib.php');
+
+        $this->refreshtoken = $token;
+
+        if (!empty($token)) {
+            set_config('refreshtoken', $token, 'enrol_ucsfsis');
+        } else {
+            set_config('refreshtoken', null, 'enrol_ucsfsis');
+        }
+    }
+
+    /**
+     * Retrieve a token stored.
+     *
+     * @return stdClass|null token object
+     */
+    protected function get_stored_token() {
+        global $CFG;
+
+        require_once($CFG->libdir.'/moodlelib.php');
+
+        $accesstoken = new stdClass;
+        $accesstoken->token = get_config('enrol_ucsfsis', 'accesstoken');
+        $accesstoken->expires = get_config('enrol_ucsfsis', 'accesstokenexpiretime');
+
+        if (!empty($accesstoken->token)) {
+            return $accesstoken;
+        }
+
+        return null;
+    }
+
+    /**
+     * Retrieve a refresh token stored.
+     *
+     * @return string|null token string
+     */
+    protected function get_stored_refresh_token() {
+        global $CFG;
+
+        require_once($CFG->libdir.'/moodlelib.php');
+
+        $refreshtoken = get_config('enrol_ucsfsis', 'refreshtoken');
+
+        if (!empty($refreshtoken)) {
+            return $refreshtoken;
+        }
+
+        return null;
+    }
+
+    /**
+     * Get refresh token.
+     *
+     * This is just a getter to read the private property.
+     *
+     * @return string
+     */
+    public function get_refreshtoken() {
+        return $this->refreshtoken;
+    }
+
+    /**
+     * Override this to use HTTP GET instead of POST.
+     * unified-api.ucsf.edu only works with GET for now.
+     * Not everything works with POST yet.
+     *
+     * @return bool true if GET should be used
+     */
+    protected function use_http_get() {
+        return true;
+    }
+
+    /**
+     * Refresh the access token from a refresh token
+     *
+     * @param string $token the token used to refresh the access token
+     * @return boolean true if token is refreshed successfully
+     */
+    protected function refresh_token($code) {
+
+        $params = array('client_id' => $this->get_clientid(),
+                        'client_secret' => $this->get_clientsecret(),
+                        'grant_type' => 'refresh_token',
+                        'refresh_token' => $code,
+        );
+
+        // Requests can either use http GET or POST.
+        if ($this->use_http_get()) {
+            $response = $this->get($this->token_url(), $params);
+        } else {
+            $response = $this->post($this->token_url(), $params);
+        }
+
+        if (!$this->info['http_code'] === 200) {
+            throw new moodle_exception('Could not refresh access token.');
+        }
+
+        $r = json_decode($response);
+
+        if (!isset($r->access_token)) {
+            return false;
+        }
+
+        // Store the token an expiry time.
+        $accesstoken = new stdClass;
+        $accesstoken->token = $r->access_token;
+        $accesstoken->expires = (time() + ($r->expires_in - 10)); // Expires 10 seconds before actual expiry.
+        $this->store_token($accesstoken);
+
+        // Store the refresh token.
+        if (isset($r->refresh_token)) {
+            $this->store_refresh_token($r->refresh_token);
+        }
+
+        // Clear cache every time we get a new token
+        if (isset($this->cache)) {
+            $this->cache->refresh();
+        }
+        if (isset($this->longer_cache)) {
+            $this->longer_cache->refresh();
+        }
+
+        return true;
+    }
+
+    /**
+     * Upgrade a authorization token from oauth 2.0 to an access token
+     *
+     * @param  string $code the code returned from the oauth authenticaiton
+     * @return boolean true if token is upgraded succesfully
+     */
+    public function log_in($username, $password) {
+
+        $params = array('client_id' => $this->get_clientid(),
+                        'client_secret' => $this->get_clientsecret(),
+                        'grant_type' => 'password',
+                        'username' => $username,
+                        'password' => $password);
+
+        // Requests can either use http GET or POST.
+        // unified-api only works with GET for now.
+        if ($this->use_http_get()) {
+            $response = $this->get($this->token_url(), $params);
+        } else {
+            $response = $this->post($this->token_url(), $params);
+        }
+
+        if (!$this->info['http_code'] === 200) {
+            throw new moodle_exception('Could not upgrade oauth token');
+        }
+
+        $r = json_decode($response);
+
+        if (!isset($r->access_token)) {
+            return false;
+        }
+
+        // Store the token an expiry time.
+        $accesstoken = new stdClass;
+        $accesstoken->token = $r->access_token;
+        $accesstoken->expires = (time() + ($r->expires_in - 10)); // Expires 10 seconds before actual expiry.
+        $this->store_token($accesstoken);
+
+        // Store the refresh token.
+        if (isset($r->refresh_token)) {
+            $this->store_refresh_token($r->refresh_token);
+        }
+
+        // Clear cache every time we log in and get a new token
+        if (isset($this->cache)) {
+            $this->cache->refresh();
+        }
+
+        return true;
+    }
+
+    /**
+     * Retrieve the data object from the return result from the URI.
+     * Anything other than data will return false.
+     *
+     * @param  string URI to the resources
+     * @return array  an array objects in data retrieved from the URI, or false when there's an error.
+     */
+    protected function get_data($uri) {
+        $result = $this->get($uri);
+
+        if (empty($result)) {
+            return false;
+        }
+
+        $result = json_decode($result);
+
+        if (isset($result->data)) {
+            return $result->data;
+        }
+
+        return false;
+    }
+
+    /**
+     * Make multiple calls to the URI until a complete set of  data are retrieved from the URI.
+     * Return false when there's an error.
+     *
+     * @param  string URI to the resources
+     * @return array  an array objects in data retrieved from the URI, or false when there's an error.
+     */
+    public function get_all_data($uri) {
+        $limit    = 100;
+        $offset   = 0;
+        $data     = null;
+        $ret_data = false;
+
+        $query_prefix = strstr($uri,'?') ? '&' : '?';
+
+        do {
+            $modified_uri = $uri . $query_prefix . "limit=$limit&offset=$offset";
+
+            // Debugging: stop if we're getting more than 1200 items.
+            if ($offset > 1200) {
+                echo "$modified_uri: <pre>".print_r($data,1)."</pre>";
+                break;
+            }
+
+            $data = $this->get_data($modified_uri);
+
+            if (!empty($data)) {
+                if (empty($ret_data)) {
+                    $ret_data = array();
+                }
+                $ret_data = array_merge($ret_data, $data);
+                $offset += $limit;
+            }
+
+        } while (!empty($data));
+
+        return $ret_data;
+    }
+
+    /**
+     * Get active school terms data in reverse chronological order
+     * Cache for 24 hours, don't expect this to change very often
+     *
+     * @return array Array of term objects.
+     */
+    public function get_active_terms() {
+        if (isset($this->cache)) {
+            // Save short term cache
+            $cache = $this->cache;
+            $this->cache = $this->longer_cache;
+        }
+
+        // $uri = $this->api_url() . '/terms?fields=id,name,fileDateForEnrollment&sort=-termStartDate';
+        $uri = $this->api_url() . '/terms?sort=-termStartDate';
+        $terms = $this->get_all_data($uri);
+
+        // restore short term cache
+        if (isset($cache)) {
+            $this->cache = $cache;
+        }
+
+        // Remove terms that have fileDateForEnrollment = NULL.
+        if (!empty($terms)) {
+            foreach ($terms as $term) {
+                if (!empty($term->fileDateForEnrollment)) {
+                    $ret[] = $term;
+                }
+            }
+            return  $ret;
+        }
+        return false;
+    }
+
+    /**
+     * Get all available subjects in a term ordered by name
+     * Cache for 24 hours, don't expect this to change very often
+     *
+     * @param  string Term ID
+     * @return array  Array of subject objects.
+     */
+    public function get_subjects_in_term($term_id) {
+        if (isset($this->cache)) {
+            // Save short term cache
+            $cache = $this->cache;
+            $this->cache = $this->longer_cache;
+        }
+
+        $termid = trim($term_id);
+        $uri = $this->api_url() . "/terms/$termid/subjects?sort=name";
+        $ret = $this->get_all_data($uri);
+
+        // restore short term cache
+        if (isset($cache)) {
+            $this->cache = $cache;
+        }
+
+        return  $ret;
+    }
+
+    /**
+     * Get information on a single course by course id
+     *
+     * @param  string Course ID
+     * @return object Course object.
+     */
+    public function get_course($course_id) {
+        $courseid = trim($course_id);
+        $uri = $this->api_url() . "/courses/$courseid";
+        $ret = $this->get_data($uri);
+
+        return  $ret;
+    }
+
+    /**
+     * Get all available courses in a term ordered by courseNumber
+     * Cache for 24 hours, don't expect this to change very often
+     *
+     * @param  string Term ID
+     * @return array  Array of course objects.
+     */
+    public function get_courses_in_term($term_id) {
+        if (isset($this->cache)) {
+            // Save short term cache
+            $cache = $this->cache;
+            $this->cache = $this->longer_cache;
+        }
+
+        $termid = trim($term_id);
+        $uri = $this->api_url() . "/terms/$termid/courses?sort=courseNumber";
+        $ret = $this->get_all_data($uri);
+
+        // restore short term cache
+        if (isset($cache)) {
+            $this->cache = $cache;
+        }
+
+        return  $ret;
+    }
+
+    /**
+     * Get enrolment list from a course id
+     *
+     * @param  int   Course ID
+     * @return array An array of enrollment object or false if error.
+     */
+    public function get_course_enrollment($course_id) {
+
+        // Never cache the enrollment data
+        $cache = $this->cache;
+        $this->cache = null;
+
+
+        $courseid = trim($course_id);
+        $uri = $this->api_url() . "/courseEnrollments?courseId=$courseid";
+        $enrollment = $this->get_all_data($uri);
+
+        // restore the cache object.
+        $this->cache = $cache;
+
+        if (empty($enrollment)) {
+            return $enrollment;
+        }
+
+        // Flatten enrollment objects (Simplify SIS return data to only what we need.)
+        $enrol_list = array();
+
+        foreach ($enrollment as $e) {
+            if (!empty($e->student) && !empty($e->student->empno)) {
+                $obj       = new stdClass();
+                $obj->ucid = $e->student->empno;
+
+                switch ($e->status) {
+                case "A":
+                    $obj->status = ENROL_USER_ACTIVE;
+                    $enrol_list[trim($e->student->empno)] = $obj;
+                    break;
+                case "I":
+                    if (!isset($enrol_list[trim($e->student->empno)])) {
+                        $obj->status = ENROL_USER_SUSPENDED;
+                        $enrol_list[trim($e->student->empno)] = $obj;
+                    }
+                    break;
+                case "S":
+                case "F":
+                default:
+                    // do nothing
+                }
+            }
+        }
+
+        if (!empty($enrol_list)) {
+            return $enrol_list;
+        } else {
+            return false;
+        }
+    }
+}
+
+
+/**
+ * This class is inherited from curl_cache class for caching, use case:
+ *
+ * @package    enrol_ucsfsis
+ * @copyright  2016 The Regents of the University of California
+ * @author     Carson Tam <carson.tam@ucsf.edu>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class sis_client_cache extends curl_cache {
+    /**
+     * Constructor
+     *
+     * @global stdClass $CFG
+     * @param string $module which module is using curl_cache
+     * @param int $ttl time to live default to 20 mins (1200 sec)
+     */
+    public function __construct($module = 'enrol_ucsfsis', $ttl = 1200) {
+        parent::__construct($module);
+        $this->ttl = $ttl;
+    }
+
+    /**
+     * Get cached value
+     *
+     * @global stdClass $CFG
+     * @param mixed $param
+     * @return bool|string
+     */
+    public function get($param) {
+        global $CFG;
+        $this->cleanup($this->ttl);
+
+        // Sort param so that filename can be consistent.
+        ksort($param);
+
+        $filename = 'u'.'_'.md5(serialize($param));
+        if(file_exists($this->dir.$filename)) {
+            $lasttime = filemtime($this->dir.$filename);
+            if (time()-$lasttime > $this->ttl) {
+                return false;
+            } else {
+                $fp = fopen($this->dir.$filename, 'r');
+                $size = filesize($this->dir.$filename);
+                $content = fread($fp, $size);
+                $result = unserialize($content);
+                return $result;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Set cache value
+     *
+     * @global object $CFG
+     * @param mixed $param
+     * @param mixed $val
+     */
+    public function set($param, $val) {
+        global $CFG;
+
+        // Cache only valid data
+        if (!empty($val)) {
+            $obj = json_decode($val);
+            if (!empty($obj) && isset($obj->data) && !empty($obj->data)) {
+                // Sort param so that filename can be consistent.
+                ksort($param);
+
+                $filename = 'u'.'_'.md5(serialize($param));
+                $fp = fopen($this->dir.$filename, 'w');
+                fwrite($fp, serialize($val));
+                fclose($fp);
+                @chmod($this->dir.$filename, $CFG->filepermissions);
+            }
+        }
+    }
+
+    /**
+     * delete current user's cache file
+     *
+     * @global object $CFG
+     */
+    public function refresh() {
+        global $CFG;
+        if ($dir = opendir($this->dir)) {
+            while (false !== ($file = readdir($dir))) {
+                if (!is_dir($file) && $file != '.' && $file != '..') {
+                    if (strpos($file, 'u'.'_') !== false) {
+                        @unlink($this->dir.$file);
+                    }
+                }
+            }
+        }
     }
 }

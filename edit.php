@@ -99,6 +99,7 @@ if ($mform->is_cancelled()) {
         $instance->customint1      = trim($data->selectsubjectcourse[1]);
         // Clear SIS course id if exists
         $instance->customchar1     = '';
+        $instance->customtext1     = '';  // get the descriptive course name here.
         $instance->timemodified    = time();
 
         $DB->update_record('enrol', $instance);

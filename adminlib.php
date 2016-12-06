@@ -73,9 +73,7 @@ class admin_setting_tabtree extends admin_setting {
     public function output_html($data, $query='') {
         global $OUTPUT;
 
-        // echo '<div class="ucsfsisdisplay">';
         $return = $OUTPUT->tabtree($this->tabs, $this->get_defaultsetting());
-        // echo '</div>';
 
         return $return;
     }

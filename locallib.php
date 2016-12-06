@@ -74,38 +74,20 @@ function enrol_ucsfsis_sync(progress_trace $trace, $courseid = NULL) {
         $context = context_course::instance($instance->courseid);
 
         $trace->output("Synchronizing course {$instance->courseid}...");
-        // $courseEnrolments = $http->get_objects('/courseEnrollments?courseId='.$siscourseid, null, null, array('status'=>'A'));
-        $courseEnrolments = $http->get_objects('/courseEnrollments?courseId='.$siscourseid);
-        if (empty($courseEnrolments)) {
+
+        $courseEnrolments = false;
+        if ($http->is_logged_in()) {
+            $courseEnrolments = $http->get_course_enrollment($siscourseid);
+        }
+
+        if ($courseEnrolments === false) {
             $trace->output("Unable to fetch data from SIS for course id: $siscourseid.", 1);
             continue;
         }
 
-        $student_enrol_statuses = array();   // Keep track of the SIS enrollment status of each student in this course.
-
-        // Aggregate Enrollment status for each student
-        foreach ($courseEnrolments as $enrollment) {
-            // Get student's empno
-            if (!empty($enrollment->student) && !empty($enrollment->student->empno)) {
-                switch ($enrollment->status) {
-                    case "A":
-                        $student_enrol_statuses[trim($enrollment->student->empno)] = ENROL_USER_ACTIVE;
-                        break;
-                    case "I":
-                        if (!isset($student_enrol_statuses[trim($enrollment->student->empno)])) {
-                            $student_enrol_statuses[trim($enrollment->student->empno)] = ENROL_USER_SUSPENDED;
-                        }
-                        break;
-                    // It said 'S' in the wiki, but Kevin says 'F' in the email, we treat both as pending, waiting for student to accept the course on the SIS student portal.
-                    case "S":
-                    case "F":
-                    default:
-                        // do nothing
-                        break;
-                }
-            } else {
-                $trace->output("warning: SIS courseEnrollments returned a record with no student info: ".print_r($enrollment,1), 1);
-            }
+        if (empty($courseEnrolments)) {
+            $trace->output("Skipping: No enrolment data from SIS for course id: $siscourseid.", 1);
+            continue;
         }
 
         // TODO: Consider doing this in bulk instead of iterating each student.
@@ -113,7 +95,9 @@ function enrol_ucsfsis_sync(progress_trace $trace, $courseid = NULL) {
         //        But update_user_enrol() will just update mdl_user_enrolments but not mdl_role_assignments
         $enrolleduserids = array();
 
-        foreach ($student_enrol_statuses as $ucid => $status) {
+        // foreach ($student_enrol_statuses as $ucid => $status) {
+        foreach ($courseEnrolments as $ucid => $userEnrol) {
+            $status = $userEnrol->status;
             $urec = $DB->get_record('user', array( 'idnumber' => $ucid ));
             if (!empty($urec)) {
                 $userid = $urec->id;

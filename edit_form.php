@@ -50,51 +50,50 @@ class enrol_ucsfsis_edit_form extends moodleform {
                                                   'courseid' => $course->id)));
 
         $http  = $enrol->get_http_client();
-        $sisisdown = false;
+        $sisisdown = !$http->is_logged_in();
 
         // Load Term options
-        // TODO: See if we could cache this result.
-        $terms = $http->get_objects('/terms', null, '-termStartDate', null, array('fileDateForEnrollment' => null));
-        $selected_term = $selected_subject = $selected_course = '';
-        if (empty($terms)) {
-            $sisisdown = true;
-            $termoptions = array('' => get_string('choosedots'));
-            $subjectoptions = array('' => get_string('choosesubjectdots', 'enrol_ucsfsis'));
-            $subjectcourseoptions[''] = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
+        if (!$sisisdown) {
+            $terms = $http->get_active_terms();
         } else {
-            // Load $termoptions
-            // $termoptions = array('' => get_string('choosedots'));
-            foreach($terms as $term) {
-                // Skip if enrollmentStartTime is in the future.
-                $enrollmentStartTime = strtotime($term->fileDateForEnrollment->enrollmentStart);
-                if ( time() < $enrollmentStartTime ) {
-                    $termoptions[trim($term->id)] = trim($term->id) . ": ". trim($term->name)
-                                                  . get_string('enrolmentstartson', 'enrol_ucsfsis',  date("M j, Y", $enrollmentStartTime));
-                } else {
-                    if (empty($selected_term)) {
-                        $selected_term = trim($term->id);
-                    }
-                    // DEBUG: Show termStartDate to make sure it is in descending order
-                    // $termoptions[trim($term->id)] = trim($term->id) . ": ". trim($term->name). " (".$term->termStartDate." to ".$term->termEndDate.")";
-                    $termoptions[trim($term->id)] = trim($term->id) . ": ". trim($term->name);
-                }
-            }
-
-            if ($instance->id) {
-                $siscourseid = $instance->customint1;
-
-                // TODO: Probably can save this call if we cached termid, subjectid: name...etc.
-                // TODO: Make sure to check for NULL value when failed.
-                // TODO: What if the SIS course id becomes invalid?  Should we at least cache the
-                //       subject and course name, so we could display them?
-                $siscourse = $http->get_object('/courses/'.$siscourseid);
-                // echo "<pre>". print_r($siscourse,1). "</pre>";
-                $selected_term = trim($siscourse->term);
-                $selected_subject = trim($siscourse->subjectForCorrespondTo);
-                $selected_course = $siscourseid;
-            }
-            $selected_term = isset($instance->submitted_termid) ?  $instance->submitted_termid : $selected_term;
+            $terms = null;
         }
+        $selected_term = $selected_subject = $selected_course = '';
+
+        // Can I refactor this part?
+            if (empty($terms)) {
+                $sisisdown = true;
+                $termoptions = array('' => get_string('choosedots'));
+                $subjectoptions = array('' => get_string('choosesubjectdots', 'enrol_ucsfsis'));
+                $subjectcourseoptions[''] = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
+            } else {
+                // Load $termoptions
+                // $termoptions = array('' => get_string('choosedots'));
+                foreach($terms as $term) {
+                    // Skip if enrollmentStartTime is in the future.
+                    $enrollmentStartTime = strtotime($term->fileDateForEnrollment->enrollmentStart);
+                    if ( time() < $enrollmentStartTime ) {
+                        $termoptions[trim($term->id)] = trim($term->id) . ": ". trim($term->name)
+                                                      . get_string('enrolmentstartson', 'enrol_ucsfsis',  date("M j, Y", $enrollmentStartTime));
+                    } else {
+                        if (empty($selected_term)) {
+                            $selected_term = trim($term->id);
+                        }
+                        // DEBUG: Show termStartDate to make sure it is in descending order
+                        // $termoptions[trim($term->id)] = trim($term->id) . ": ". trim($term->name). " (".$term->termStartDate." to ".$term->termEndDate.")";
+                        $termoptions[trim($term->id)] = trim($term->id) . ": ". trim($term->name);
+                    }
+                }
+
+                if ($instance->id) {
+                    $siscourseid = $instance->customint1;
+                    $siscourse = $http->get_course($siscourseid);
+                    $selected_term = trim($siscourse->term);
+                    $selected_subject = trim($siscourse->subjectForCorrespondTo);
+                    $selected_course = $siscourseid;
+                }
+                $selected_term = isset($instance->submitted_termid) ?  $instance->submitted_termid : $selected_term;
+            }
 
         // Display error message (setConstant and hardFreeze fields)
         if ($sisisdown) {
@@ -125,42 +124,50 @@ class enrol_ucsfsis_edit_form extends moodleform {
         $mform->addElement('submit', 'submitterm', get_string('termoptionsupdate', 'enrol_ucsfsis'));
         $element->setValue($selected_term);
 
+        // Can I refractor this part?
 
-        // Populate subjectoptions
-        // TODO: if get_objects returns empty, we should show 'No subject choice is available yet.'
-        // CONTINUE: Wait...what if $submitted_term is not empty?
-        if (!$sisisdown) {
-            $subjects = $http->get_objects('/terms/' . $selected_term . '/subjects', null, 'name');
-            $subjectoptions = array('' => get_string('choosesubjectdots', 'enrol_ucsfsis'));
-            $subjectcourseoptions[''] = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
-            foreach ($subjects as $subject) {
-                // if (empty($selected_subject)) {
-                //     $selected_subject = trim($subject->id);
-                // }
-                $subjectoptions[trim($subject->id)] = trim($subject->code) . ": " . $subject->name . " (" . $subject->id . ")";
-                $subjectcourseoptions[trim($subject->id)] = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
-            }
-        }
-        // Populate subjectcourseoptions
-        // TODO: if get_objects returns empty, we should show 'No course is available yet.'
-        if (!$sisisdown) {
-            $courses = $http->get_objects('/terms/' . $selected_term . '/courses', null, 'courseNumber');
-            foreach ($courses as $course) {
-                if (empty($selected_course)) {
-                    $selected_course = trim($course->id);
+            // Populate subjectoptions
+            // TODO: if get_objects returns empty, we should show 'No subject choice is available yet.'
+            // CONTINUE: Wait...what if $submitted_term is not empty?
+            if (!$sisisdown) {
+                // $subjects = $http->get_objects('/terms/' . $selected_term . '/subjects', null, 'name');
+                $subjects = $http->get_subjects_in_term( $selected_term );
+                $subjectoptions = array('' => get_string('choosesubjectdots', 'enrol_ucsfsis'));
+                $subjectcourseoptions[''] = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
+                if (!empty($subjects)) {
+                    foreach ($subjects as $subject) {
+                        // if (empty($selected_subject)) {
+                        //     $selected_subject = trim($subject->id);
+                        // }
+                        $subjectoptions[trim($subject->id)] = trim($subject->code) . ": " . $subject->name . " (" . $subject->id . ")";
+                        $subjectcourseoptions[trim($subject->id)] = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
+                    }
                 }
-                $instructorname = '';
-                if (!empty($course->userForInstructorOfRecord)) {
-                    $instr = $course->userForInstructorOfRecord;
-                    $instructorname = " ($instr->firstName $instr->lastName)";
-                }
-                // $subjectcourseoptions[trim($course->subjectForCorrespondTo)]['"'.trim($course->id).'"']
-                // Course index needs to be a string (by prefixing with a space); otherwise, it will be sorted as Int.
-                $subjectcourseoptions[trim($course->subjectForCorrespondTo)][" ".trim($course->id)]
-                                                                                // = trim($course->courseNumber) . ": " . $course->name . " (" . $course->id .")";
-                                                                                = trim($course->courseNumber) . ": " . $course->name . $instructorname;
             }
-        }
+            // Populate subjectcourseoptions
+            // TODO: if get_objects returns empty, we should show 'No course is available yet.'
+            if (!$sisisdown) {
+                // $courses = $http->get_objects('/terms/' . $selected_term . '/courses', null, 'courseNumber');
+                $courses = $http->get_courses_in_term($selected_term);
+                if (!empty($courses)) {
+                    foreach ($courses as $course) {
+                        if (empty($selected_course)) {
+                            $selected_course = trim($course->id);
+                        }
+                        $instructorname = '';
+                        if (!empty($course->userForInstructorOfRecord)) {
+                            $instr = $course->userForInstructorOfRecord;
+                            $instructorname = " ($instr->firstName $instr->lastName)";
+                        }
+                        // $subjectcourseoptions[trim($course->subjectForCorrespondTo)]['"'.trim($course->id).'"']
+                        // Course index needs to be a string (by prefixing with a space); otherwise, it will be sorted as Int.
+                        $subjectcourseoptions[trim($course->subjectForCorrespondTo)][" ".trim($course->id)]
+                                                                                        // = trim($course->courseNumber) . ": " . $course->name . " (" . $course->id .")";
+                                                                                        = trim($course->courseNumber) . ": " . $course->name . $instructorname;
+                    }
+                }
+            }
+
 
         $element = &$mform->addElement('hierselect', 'selectsubjectcourse', get_string('subject_course', 'enrol_ucsfsis'), '', '<br />');
         $element->setOptions(array($subjectoptions, $subjectcourseoptions));

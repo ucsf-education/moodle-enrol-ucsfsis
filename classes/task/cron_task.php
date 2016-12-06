@@ -49,19 +49,19 @@ class cron_task extends \core\task\scheduled_task {
         if (!empty($index)) {
             $total = $DB->count_records('enrol', array( 'enrol'=>'ucsfsis', 'status' => '0'));
             if (!empty($total)) {
-                $info .= round($index/$total * 100) . "% completed";
+                $info .= '<br />'.round($index/$total * 100) . "% has been completed.";
             }
         }
 
         // last completed time
         $last_completed = $enrol->get_config('last_completed_time');
         if (!empty($last_completed)) {
-            $info .= " since last complete run on ".userdate($last_completed);
+            $info .= "<br />Last complete run was on ".userdate($last_completed).'.';
         }
 
         // Append and format extra information
         if (!empty($info)) {
-            $task_name .= "<br /><small><em>$info.</em></small>";
+            $task_name .= "<small><em>$info</em></small>";
         }
 
         return $task_name;
@@ -79,11 +79,10 @@ class cron_task extends \core\task\scheduled_task {
         require_once($CFG->libdir . '/weblib.php');
 
         $enrol = enrol_get_plugin('ucsfsis');
-        $numlimit = 200;   // Number of courses to sync on each run
-        $numupdated = 0;  // Number of courses has been sync'd on this run
-        $startindex = $enrol->get_config('last_sync_course_index', 0);
-
         $total = $DB->count_records('enrol', array( 'enrol'=>'ucsfsis', 'status' => '0'));
+        $numlimit   = ceil($total / 6);  // Number of courses to sync on each run (Try to have a complete run within an hour.)
+        $numupdated = 0;                 // Number of courses has been sync'd on this run
+        $startindex = $enrol->get_config('last_sync_course_index', 0);
 
         $courses = $DB->get_records( 'enrol',
                                      array( 'enrol'=>'ucsfsis', 'status' => '0' ),
@@ -91,12 +90,18 @@ class cron_task extends \core\task\scheduled_task {
                                      'id, courseid, roleid, customint1',
                                      $startindex, $numlimit );
         if (empty($courses)) {
+            // Reset startindex for next run
             $startindex = 0;    // start from beginning again
-            $courses = $DB->get_records( 'enrol',
-                                         array( 'enrol'=>'ucsfsis', 'status' => '0' ),
-                                         'timecreated',
-                                         'id, courseid, roleid, customint1',
-                                         $startindex, $numlimit );
+            $enrol->set_config('last_sync_course_index', $startindex);
+            // $courses = $DB->get_records( 'enrol',
+            //                              array( 'enrol'=>'ucsfsis', 'status' => '0' ),
+            //                              'timecreated',
+            //                              'id, courseid, roleid, customint1',
+            //                              $startindex, $numlimit );
+
+            // Prefetch common cache data
+            $enrol->prefetch_common_cache_data();
+            return;
         }
 
         $trace = new \text_progress_trace();

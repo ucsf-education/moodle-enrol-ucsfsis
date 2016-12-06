@@ -25,6 +25,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once(__DIR__.'/lib.php');
 require_once(__DIR__.'/adminlib.php');
 
 $currenttab = optional_param('tabview', 'settings', PARAM_ALPHA);
@@ -94,31 +95,18 @@ if ($ADMIN->fulltree) {
          *
          */
 
-        /* Useful Examples:
-        http://www.moodle.dev/admin/settings.php?section=modsettinglti
-        http://www.moodle.dev/admin/settings.php?section=modsettingglossary
-        http://www.moodle.dev/admin/settings.php?section=modsettingassign
-        http://www.moodle.dev/admin/settings.php?section=assignfeedback_editpdf
-
-        */
-        $default_api_host = 'https://unified-api.ucsf.edu';
-        // $default_api_host = 'https://stage-unified-api.ucsf.edu';
+        $default_api_host = ucsfsis_oauth_client::DEFAULT_HOST;
 
         $settings->add(new admin_setting_heading('enrol_ucsfsis_api_server_settings', get_string('api_server_settings', 'enrol_ucsfsis'), get_string('oauthinfo', 'enrol_ucsfsis')));
 
         $settings->add(new admin_setting_configtext('enrol_ucsfsis/host_url', get_string('host_url', 'enrol_ucsfsis'), get_string('host_url_desc', 'enrol_ucsfsis'), $default_api_host));
-        // TODO: Remove resourceid and password.  Should ask prompt admin to log into MyAccess for token
+
+        // TODO: Remove resourceid and password.  Should ask prompt admin to log in and do callbacks
         $settings->add(new admin_setting_configtext('enrol_ucsfsis/resourceid', get_string('resourceid', 'enrol_ucsfsis'), get_string('resourceid_desc', 'enrol_ucsfsis'), ''));
         $settings->add(new admin_setting_configpasswordunmask('enrol_ucsfsis/resourcepassword', get_string('resourcepassword', 'enrol_ucsfsis'), get_string('resourcepassword_desc', 'enrol_ucsfsis'), ''));
 
         $settings->add(new admin_setting_configtext('enrol_ucsfsis/clientid', get_string('clientid', 'enrol_ucsfsis'), get_string('clientid_desc', 'enrol_ucsfsis'), ''));
         $settings->add(new admin_setting_configpasswordunmask('enrol_ucsfsis/secret', get_string('secret', 'enrol_ucsfsis'), get_string('secret_desc', 'enrol_ucsfsis'), ''));
-
-        // TODO: Add a button to generate token / refresh token, any example?
-        // $settings->add(new admin_setting_configtext('enrol_ucsfsis/accesstoken', get_string('accesstoken', 'enrol_ucsfsis'), get_string('accesstoken_desc', 'enrol_ucsfsis'), ''));
-        // $settings->add(new admin_setting_configtext('enrol_ucsfsis/refreshtoken', get_string('refreshtoken', 'enrol_ucsfsis'), get_string('refreshtoken_desc', 'enrol_ucsfsis'), ''));
-        // $settings->add(new admin_setting_configtext('enrol_ucsfsis/accesstokenexpiretime', 'Expiration', 'Expiration description', ''));
-
 
         //--- enrol instance defaults ----------------------------------------------------------------------------
         $settings->add(new admin_setting_heading('enrol_ucsfsis_defaults',

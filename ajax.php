@@ -64,17 +64,36 @@ switch ($action) {
     case 'gettermoptions':
         require_capability('moodle/course:enrolconfig', $context);
         $termid = required_param('termid', PARAM_ALPHANUMEXT);
-        $http = $enrol->get_http_client();
-        $subjects = $http->get_objects('/terms/' . $termid . '/subjects', null, 'name');
-        foreach ($subjects as $subject) {
-            $subjectoptions[trim($subject->id)] = trim($subject->code) . ": " . $subject->name;
-            $subjectcourseoptions[trim($subject->id)] = array('' => get_string('choosedots'));
-        }
 
-        $courses = $http->get_objects('/terms/' . $termid . '/courses', null, 'courseNumber');
-        foreach ($courses as $course) {
-            $subjectcourseoptions[trim($course->subjectForCorrespondTo)]['"'.trim($course->id).'"']
-                = trim($course->courseNumber) . ": " . $course->name;
+        $subjectoptions = array('' => get_string('choosesubjectdots', 'enrol_ucsfsis'));
+        $subjectcourseoptions[''] = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
+
+        $http = $enrol->get_http_client();
+        if ($http->is_logged_in()) {
+            // $subjects = $http->get_objects('/terms/' . $termid . '/subjects', null, 'name');
+            $subjects = $http->get_subjects_in_term($termid);
+            if (!empty($subjects)) {
+                foreach ($subjects as $subject) {
+                    $subjectoptions[trim($subject->id)] = trim($subject->code) . ": " . $subject->name;
+                    $subjectcourseoptions[trim($subject->id)] = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
+                }
+            }
+
+            $courses = $http->get_courses_in_term($termid);
+            if (!empty($courses)) {
+                foreach ($courses as $course) {
+                        $instructorname = '';
+                        if (!empty($course->userForInstructorOfRecord)) {
+                            $instr = $course->userForInstructorOfRecord;
+                            $instructorname = " ($instr->firstName $instr->lastName)";
+                        }
+                        // $subjectcourseoptions[trim($course->subjectForCorrespondTo)]['"'.trim($course->id).'"']
+                        // Course index needs to be a string (by prefixing with a space); otherwise, it will be sorted as Int.
+                        $subjectcourseoptions[trim($course->subjectForCorrespondTo)][" ".trim($course->id)]
+                                                                                        // = trim($course->courseNumber) . ": " . $course->name . " (" . $course->id .")";
+                                                                                        = trim($course->courseNumber) . ": " . $course->name . $instructorname;
+                }
+            }
         }
 
         $outcome->response = array( $subjectoptions, $subjectcourseoptions );
