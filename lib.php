@@ -1290,9 +1290,9 @@ class ucsfsis_oauth_client extends oauth2_client {
      * @return array Array of term objects.
      */
     public function get_active_terms() {
+        // Save short term cache
+        $cache = $this->cache;
         if (isset($this->cache)) {
-            // Save short term cache
-            $cache = $this->cache;
             $this->cache = $this->longer_cache;
         }
 
@@ -1365,9 +1365,9 @@ class ucsfsis_oauth_client extends oauth2_client {
      * @return array  Array of course objects.
      */
     public function get_courses_in_term($term_id) {
+        // Save short term cache
+        $cache = $this->cache;
         if (isset($this->cache)) {
-            // Save short term cache
-            $cache = $this->cache;
             $this->cache = $this->longer_cache;
         }
 
