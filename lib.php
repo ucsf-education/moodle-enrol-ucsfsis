@@ -1270,6 +1270,11 @@ class ucsfsis_oauth_client extends oauth2_client {
 
             $data = $this->get_data($modified_uri);
 
+            // Just return false when there's an error
+            if (false === $data) {
+                return false;
+            }
+
             if (!empty($data)) {
                 if (empty($ret_data)) {
                     $ret_data = array();
