@@ -147,8 +147,55 @@ function enrol_ucsfsis_sync(progress_trace $trace, $courseid = NULL) {
             }
             $rs->close();
         }
-        $trace->output("Completed synchronizing course {$instance->courseid}.");
     }
+
+    // Now assign all necessary roles to enrolled users - skip suspended instances and users.
+    // TODO: BUG: does not unassign the old role... :(
+    $onecourse = $courseid ? "AND e.courseid = :courseid" : "";
+    $sql = "SELECT e.roleid, ue.userid, c.id AS contextid, e.id AS itemid, e.courseid
+              FROM {user_enrolments} ue
+              JOIN {enrol} e ON (e.id = ue.enrolid AND e.enrol = 'ucsfsis' AND e.status = :statusenabled $onecourse)
+              JOIN {role} r ON (r.id = e.roleid)
+              JOIN {context} c ON (c.instanceid = e.courseid AND c.contextlevel = :coursecontext)
+              JOIN {user} u ON (u.id = ue.userid AND u.deleted = 0)
+         LEFT JOIN {role_assignments} ra ON (ra.contextid = c.id AND ra.userid = ue.userid AND ra.itemid = e.id AND ra.component = 'enrol_ucsfsis' AND e.roleid = ra.roleid)
+             WHERE ue.status = :useractive AND ra.id IS NULL";
+    $params = array();
+    $params['statusenabled'] = ENROL_INSTANCE_ENABLED;
+    $params['useractive'] = ENROL_USER_ACTIVE;
+    $params['coursecontext'] = CONTEXT_COURSE;
+    $params['courseid'] = $courseid;
+
+    $rs = $DB->get_recordset_sql($sql, $params);
+    foreach($rs as $ra) {
+        role_assign($ra->roleid, $ra->userid, $ra->contextid, 'enrol_ucsfsis', $ra->itemid);
+        $trace->output("assigning role: $ra->userid ==> $ra->courseid as ".$allroles[$ra->roleid]->shortname, 1);
+    }
+    $rs->close();
+
+
+    // Remove unwanted roles - sync role can not be changed, we only remove role when unenrolled.
+    $onecourse = $courseid ? "AND e.courseid = :courseid" : "";
+    $sql = "SELECT ra.roleid, ra.userid, ra.contextid, ra.itemid, e.courseid
+              FROM {role_assignments} ra
+              JOIN {context} c ON (c.id = ra.contextid AND c.contextlevel = :coursecontext)
+              JOIN {enrol} e ON (e.id = ra.itemid AND e.enrol = 'ucsfsis' $onecourse)
+         LEFT JOIN {user_enrolments} ue ON (ue.enrolid = e.id AND ue.userid = ra.userid AND ue.status = :useractive)
+             WHERE ra.component = 'enrol_ucsfsis' AND (ue.id IS NULL OR e.status <> :statusenabled OR e.roleid <> ra.roleid)";
+    $params = array();
+    $params['statusenabled'] = ENROL_INSTANCE_ENABLED;
+    $params['useractive'] = ENROL_USER_ACTIVE;
+    $params['coursecontext'] = CONTEXT_COURSE;
+    $params['courseid'] = $courseid;
+
+    $rs = $DB->get_recordset_sql($sql, $params);
+    foreach($rs as $ra) {
+        role_unassign($ra->roleid, $ra->userid, $ra->contextid, 'enrol_ucsfsis', $ra->itemid);
+        $trace->output("unassigning role: $ra->userid ==> $ra->courseid as ".$allroles[$ra->roleid]->shortname, 1);
+    }
+    $rs->close();
+
+    $trace->output("Completed synchronizing course {$instance->courseid}.");
 
     return 1;
 }
