@@ -1255,35 +1255,62 @@ class ucsfsis_oauth_client extends oauth2_client {
         $limit    = 100;
         $offset   = 0;
         $data     = null;
+        $expected_list_size = null;
         $ret_data = false;
+
 
         $query_prefix = strstr($uri,'?') ? '&' : '?';
 
         do {
             $modified_uri = $uri . $query_prefix . "limit=$limit&offset=$offset";
 
-            // Debugging: stop if we're getting more than 1200 items.
-            if ($offset > 1200) {
-                echo "$modified_uri: <pre>".print_r($data,1)."</pre>";
-                break;
-            }
+            $result = $this->get($modified_uri);
+            $response = $result;   // save response for debugging
 
-            $data = $this->get_data($modified_uri);
-
-            // Just return false when there's an error
-            if (false === $data) {
+            if (empty($result)) {
+                error_log("API call  $modified_uri returned empty.");
                 return false;
             }
 
-            if (!empty($data)) {
-                if (empty($ret_data)) {
-                    $ret_data = array();
+            $result = json_decode($result);
+            if (isset($result->error)) {
+                preg_match('/(Offset \[\d+\] is larger than list size: )([0-9]+)/', $result->error, $errors);
+                if (!empty($errors) && isset($errors[2])) {
+                    // end of list has reached.
+                    $data = null;
+                    $expected_list_size = $errors[2];
+                } else {
+                    // return false on any other error
+                    error_log("API call $url returned error: {$result->error}");
+                    return false;
                 }
-                $ret_data = array_merge($ret_data, $data);
-                $offset += $limit;
+            } else if (isset($result->data)) {
+                $data = $result->data;
+
+                if (!empty($data)) {
+                    if (empty($ret_data)) {
+                        $ret_data = array();
+                    }
+                    $ret_data = array_merge($ret_data, $data);
+                    $offset += $limit;
+                }
+            } else {
+                // something went wrong, no data, no error.
+                error_log("API call $url returned unexpected response: {$response}");
+                return false;
             }
 
         } while (!empty($data));
+
+        // double check list size (if available).
+        if (!empty($expected_list_size)) {
+            if ($expected_list_size == count($ret_data)) {
+                return $ret_data;
+            } else {
+                error_log("API call $modified_url did not return same number of items as it claims which is $expected_list_size, actual is ".count($ret_data).".");
+                return false;
+            }
+        }
 
         return $ret_data;
     }
