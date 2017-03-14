@@ -318,47 +318,54 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
         $disclosefile = $this->obfuscate_filepath($filelocation);
 
         if (!file_exists($filelocation)) {
-            $trace->output("SIS enrolments file not found: $disclosefile");
-            $trace->finished();
-            return false;
-        }
+            $trace->output("SIS enrolments file not found: $disclosefile.  Skipping conversion of database enrollment in courses.");
+        } else {
 
-        // Make sure ucsfsis is enabled
-        // It's okay if it has not been enabled yet.
-        // if (!enrol_is_enabled('ucsfsis')) {
-        //     $trace->output("UCSFSIS enrol needs to be enabled for this to run.  Please enable it and try again.");
-        //     return false;
-        // }
+            // Make sure ucsfsis is enabled
+            // It's okay if it has not been enabled yet.
+            // if (!enrol_is_enabled('ucsfsis')) {
+            //     $trace->output("UCSFSIS enrol needs to be enabled for this to run.  Please enable it and try again.");
+            //     return false;
+            // }
 
-        $trace->output("Processing SIS file enrolments from: $disclosefile ...");
+            $trace->output("Processing SIS file enrolments from: $disclosefile ...");
 
-        $courses = $this->get_enrolments_from_feed_file($filelocation, $trace);
+            $courses = $this->get_enrolments_from_feed_file($filelocation, $trace);
 
-        foreach ($courses as $courseid => $course) {
-            $idnumber = $course['idnumber'];
-            $m_courses = $DB->get_records('course', array('idnumber' => $idnumber));
-            foreach ($m_courses as $c) {
+            foreach ($courses as $courseid => $course) {
+                $idnumber = $course['idnumber'];
+                $m_courses = $DB->get_records('course', array('idnumber' => $idnumber));
+                foreach ($m_courses as $c) {
 
-                // Set 'enrol' from 'database' to 'ucsfsis', 'customint1' to $courseid, 'customchar1' to $idnumber
-                $rec = $DB->get_record('enrol', array('courseid'=>$c->id, 'enrol'=>'database'));
+                    // Set 'enrol' from 'database' to 'ucsfsis', 'customint1' to $courseid, 'customchar1' to $idnumber
+                    $rec = $DB->get_record('enrol', array('courseid'=>$c->id, 'enrol'=>'database'));
 
-                $trace->output("Converting course ".$c->id.", ".$c->fullname.": idnumber = ".$idnumber.", SIS courseid = ".$courseid.".");
+                    $trace->output("Converting course ".$c->id.", ".$c->fullname.": idnumber = ".$idnumber.", SIS courseid = ".$courseid.".");
 
-                if (!empty($rec)) {
-                    $rec->enrol       = 'ucsfsis';
-                    $rec->customint1  = $courseid;
-                    $rec->customchar1 = $idnumber;
-                    $rec->customtext1 = "<strong>{$course['subjectCode']}{$course['courseNumber']} {$course['courseTitle']}</strong>, {$course['term']}";
-                    $rec->roleid      = $this->get_config('default_student_roleid');
-                    $DB->update_record('enrol', $rec);
+                    if (!empty($rec)) {
+                        $rec->enrol       = 'ucsfsis';
+                        $rec->customint1  = $courseid;
+                        $rec->customchar1 = $idnumber;
+                        $rec->customtext1 = "<strong>{$course['subjectCode']}{$course['courseNumber']} {$course['courseTitle']}</strong>, {$course['term']}";
+                        $rec->roleid      = $this->get_config('default_student_roleid');
+                        $DB->update_record('enrol', $rec);
+                    }
+
+                    // Clear the idnumber field on the course table
+                    $DB->set_field('course', 'idnumber', '', array('id' => $c->id));
                 }
-
-                // Clear the idnumber field on the course table
-                $DB->set_field('course', 'idnumber', '', array('id' => $c->id));
             }
+
+            $trace->output("...finished enrolment file processing.");
         }
 
-        $trace->output("...finished enrolment file processing.");
+        $trace->output("Updating role_assignments table...");
+        $result = $DB->execute("UPDATE {role_assignments} SET component = 'enrol_ucsfsis' WHERE component = 'enrol_database'");
+        if (!$result) {
+            $trace->output("Encounter error while updating role_assignments table.");
+        } else {
+            $trace->output("Successful updated role_assginments table.");
+        }
 
         $trace->finished();
 
