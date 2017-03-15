@@ -1275,7 +1275,7 @@ class ucsfsis_oauth_client extends oauth2_client {
             $response = $result;   // save response for debugging
 
             if (empty($result)) {
-                error_log("API call  $modified_uri returned empty.");
+                error_log("API call '$modified_uri' returned empty.");
                 return false;
             }
 
@@ -1288,7 +1288,7 @@ class ucsfsis_oauth_client extends oauth2_client {
                     $expected_list_size = $errors[2];
                 } else {
                     // return false on any other error
-                    error_log("API call $url returned error: {$result->error}");
+                    error_log("API call '$modified_uri' returned error: {$result->error}");
                     return false;
                 }
             } else if (isset($result->data)) {
@@ -1303,7 +1303,7 @@ class ucsfsis_oauth_client extends oauth2_client {
                 }
             } else {
                 // something went wrong, no data, no error.
-                error_log("API call $url returned unexpected response: {$response}");
+                error_log("API call '$modified_uri' returned unexpected response: {$response}");
                 return false;
             }
 
@@ -1314,7 +1314,7 @@ class ucsfsis_oauth_client extends oauth2_client {
             if ($expected_list_size == count($ret_data)) {
                 return $ret_data;
             } else {
-                error_log("API call $modified_url did not return same number of items as it claims which is $expected_list_size, actual is ".count($ret_data).".");
+                error_log("API call '$modified_uri' did not return same number of items as it claims which is $expected_list_size, actual is ".count($ret_data).".");
                 return false;
             }
         }
