@@ -56,8 +56,6 @@ function enrol_ucsfsis_sync(progress_trace $trace, $courseid = NULL) {
     $http   = $plugin->get_http_client();
 
     $unenrolaction = $plugin->get_config('unenrolaction', ENROL_EXT_REMOVED_UNENROL);
-    $moodleusersyncfield = 'idnumber';
-    $sisusersyncfield = 'studentId';
 
     $onecourse = $courseid ? "AND e.courseid = :courseid" : "";
     $sql = "SELECT *
