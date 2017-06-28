@@ -113,6 +113,22 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
     }
 
     /**
+     * @inheritdoc
+     */
+    public function can_delete_instance($instance) {
+        $context = context_course::instance($instance->courseid);
+        return has_capability('enrol/ucsfsis:config', $context);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function can_hide_show_instance($instance) {
+        $context = context_course::instance($instance->courseid);
+        return has_capability('enrol/ucsfsis:config', $context);
+    }
+
+    /**
      * Returns enrolment instance manage link.
      *
      * By defaults looks for manage.php file and tests for manage capability.
