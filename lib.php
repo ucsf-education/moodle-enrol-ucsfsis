@@ -926,7 +926,7 @@ class ucsfsis_oauth_client extends oauth2_client {
     /** @var string resource password */
     private $password = '';
     /** @var string refresh token */
-    private $refreshtoken = '';
+    protected $refreshtoken = '';
     /** @var bool Caches http request contents that do not change often like schools, terms, departments, subjects...etc */
     public  $longer_cache = false;    // Cache for 24 hours.
 
