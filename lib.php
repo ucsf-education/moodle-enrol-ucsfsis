@@ -1033,6 +1033,25 @@ class ucsfsis_oauth_client extends oauth2_client {
     }
 
     /**
+     * Make a HTTP request, adding the access token we have
+     *
+     * @param string $url The URL to request
+     * @param array $options
+     * @param mixed $acceptheader mimetype (as string) or false to skip sending an accept header.
+     * @return bool
+     */
+    protected function request($url, $options = array(), $acceptheader = 'application/json') {
+
+        // We need these in the header all time.
+        $this->setHeader('client_id: '.$this->get_clientid());
+        $this->setHeader('client_secret: '.$this->get_clientsecret());
+
+        $response = parent::request($url, $options, $acceptheader);
+
+        return $response;
+    }
+
+    /**
      * Store access token between requests.
      *
      * @param stdClass|null $token token object to store or null to clear
