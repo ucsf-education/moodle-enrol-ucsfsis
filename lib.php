@@ -428,6 +428,75 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
         return $actions;
     }
 
+    /**
+     * Restore instance and map settings.
+     *
+     * @param restore_enrolments_structure_step $step
+     * @param stdClass $data
+     * @param stdClass $course
+     * @param int $oldid
+     */
+    public function restore_instance(restore_enrolments_structure_step $step, stdClass $data, $course, $oldid) {
+        global $DB;
+        // There is only 1 SIS enrol instance per course.
+        if ($instances = $DB->get_records('enrol', array('courseid'=>$data->courseid, 'enrol'=>'ucsfsis'), 'id')) {
+            $instance = reset($instances);
+            $instanceid = $instance->id;
+        } else {
+            $instanceid = $this->add_instance($course, (array)$data);
+        }
+        $step->set_mapping('enrol', $oldid, $instanceid);
+    }
+
+    /**
+     * Restore user enrolment.
+     *
+     * @param restore_enrolments_structure_step $step
+     * @param stdClass $data
+     * @param stdClass $instance
+     * @param int $oldinstancestatus
+     * @param int $userid
+     */
+    public function restore_user_enrolment(restore_enrolments_structure_step $step, $data, $instance, $userid, $oldinstancestatus) {
+        global $DB;
+
+        if ($this->get_config('unenrolaction') == ENROL_EXT_REMOVED_UNENROL) {
+            // Enrolments were already synchronised in restore_instance(), we do not want any suspended leftovers.
+
+        } else if ($this->get_config('unenrolaction') == ENROL_EXT_REMOVED_KEEP) {
+            if (!$DB->record_exists('user_enrolments', array('enrolid'=>$instance->id, 'userid'=>$userid))) {
+                $this->enrol_user($instance, $userid, null, 0, 0, $data->status);
+            }
+
+        } else {
+            if (!$DB->record_exists('user_enrolments', array('enrolid'=>$instance->id, 'userid'=>$userid))) {
+                $this->enrol_user($instance, $userid, null, 0, 0, ENROL_USER_SUSPENDED);
+            }
+        }
+    }
+
+    /**
+     * Restore role assignment.
+     *
+     * @param stdClass $instance
+     * @param int $roleid
+     * @param int $userid
+     * @param int $contextid
+     */
+    public function restore_role_assignment($instance, $roleid, $userid, $contextid) {
+        global $DB;
+
+        if ($this->get_config('unenrolaction') == ENROL_EXT_REMOVED_UNENROL or $this->get_config('unenrolaction') == ENROL_EXT_REMOVED_SUSPENDNOROLES) {
+            // Skip any roles restore, they should be already synced automatically.
+            return;
+        }
+
+        // Just restore every role.
+        if ($DB->record_exists('user_enrolments', array('enrolid'=>$instance->id, 'userid'=>$userid))) {
+            role_assign($roleid, $userid, $contextid, 'enrol_'.$instance->enrol, $instance->id);
+        }
+    }
+
 
     public function get_http_client() {
         if (empty($this->_sisclient)) {
