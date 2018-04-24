@@ -120,7 +120,7 @@ if ($mform->is_cancelled()) {
     }
 
     $trace = new null_progress_trace();
-    enrol_ucsfsis_sync($trace, $course->id);
+    $enrol->sync($trace, $course->id);
     $trace->finished();
     redirect($returnurl);
 }

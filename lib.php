@@ -176,26 +176,13 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
     }
 
     /**
-     * Called for all enabled enrol plugins that returned true from is_cron_required().
-     * @return void
-     */
-    // public function cron($trace=null) {
-    //     global $CFG;
-
-    //     require_once("$CFG->dirroot/enrol/ucsfsis/locallib.php");
-    //     $trace = new text_progress_trace();
-    //     // $this->sync($trace);
-    //     enrol_ucsfsis_sync($trace);
-
-    //     $trace->finished();
-    // }
-
-    /**
      * Execute synchronisation.
      * @param progress_trace
+     * @param int $courseid one course, empty mean all
      * @return int exit code, 0 means ok, 2 means plugin disabled
      */
-    public function sync(progress_trace $trace) {
+    public function sync(progress_trace $trace, $courseid = null) {
+        global $CFG;
         // TODO: Modify this to perform something similar to enrol_ucsfsis_sync($trace)
         //       Or just call it.
         // TODO: Is there a way to break this cron into sections to run?
@@ -204,6 +191,9 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
             role_unassign_all(array('component'=>'enrol_ucsfsis'));
             return 2;
         }
+
+        require_once("$CFG->dirroot/enrol/ucsfsis/locallib.php");
+        enrol_ucsfsis_sync($trace, $courseid);
 
         return 0;
     }
@@ -402,9 +392,8 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
 
         parent::update_status($instance, $newstatus);
 
-        require_once("$CFG->dirroot/enrol/ucsfsis/locallib.php");
         $trace = new null_progress_trace();
-        enrol_ucsfsis_sync($trace, $instance->courseid);
+        $this->sync($trace);
         $trace->finished();
     }
 

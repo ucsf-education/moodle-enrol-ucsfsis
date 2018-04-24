@@ -107,8 +107,7 @@ class cron_task extends \core\task\scheduled_task {
         $trace = new \text_progress_trace();
 
         foreach ($courses as $course) {
-            enrol_ucsfsis_sync($trace, $course->courseid);
-            // $enrol->sync($trace, $course->courseid);
+            $enrol->sync($trace, $course->courseid);
             $numupdated++;
             $enrol->set_config('last_sync_course_index', $startindex + $numupdated);
         }
