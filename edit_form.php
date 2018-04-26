@@ -118,7 +118,6 @@ class enrol_ucsfsis_edit_form extends moodleform {
 
         // Add Term Select box
         $element = &$mform->addElement('select', 'selectterm', get_string('term', 'enrol_ucsfsis'), $termoptions);
-        // $mform->addRule('selectterm', get_string('required'), 'required', null, 'client');
         $mform->addHelpButton('selectterm', 'term', 'enrol_ucsfsis');
         $mform->registerNoSubmitButton('submitterm');
         $mform->addElement('submit', 'submitterm', get_string('termoptionsupdate', 'enrol_ucsfsis'));
@@ -127,27 +126,19 @@ class enrol_ucsfsis_edit_form extends moodleform {
         // Can I refractor this part?
 
             // Populate subjectoptions
-            // TODO: if get_objects returns empty, we should show 'No subject choice is available yet.'
-            // CONTINUE: Wait...what if $submitted_term is not empty?
             if (!$sisisdown) {
-                // $subjects = $http->get_objects('/terms/' . $selected_term . '/subjects', null, 'name');
                 $subjects = $http->get_subjects_in_term( $selected_term );
                 $subjectoptions = array('' => get_string('choosesubjectdots', 'enrol_ucsfsis'));
                 $subjectcourseoptions[''] = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
                 if (!empty($subjects)) {
                     foreach ($subjects as $subject) {
-                        // if (empty($selected_subject)) {
-                        //     $selected_subject = trim($subject->id);
-                        // }
                         $subjectoptions[trim($subject->id)] = trim($subject->code) . ": " . $subject->name . " (" . $subject->id . ")";
                         $subjectcourseoptions[trim($subject->id)] = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
                     }
                 }
             }
             // Populate subjectcourseoptions
-            // TODO: if get_objects returns empty, we should show 'No course is available yet.'
             if (!$sisisdown) {
-                // $courses = $http->get_objects('/terms/' . $selected_term . '/courses', null, 'courseNumber');
                 $courses = $http->get_courses_in_term($selected_term);
                 if (!empty($courses)) {
                     foreach ($courses as $course) {
@@ -180,7 +171,6 @@ class enrol_ucsfsis_edit_form extends moodleform {
         } else {
             $roles = get_default_enrol_roles($context, $enrol->get_config('default_student_roleid'));
         }
-        // $mform->addElement('select', 'roleid', get_string('defaultrole', 'role'), $roles);
         $mform->addElement('select', 'roleid', get_string('assignrole', 'role'), $roles);
         $mform->setDefault('roleid', $enrol->get_config('default_student_roleid'));
 

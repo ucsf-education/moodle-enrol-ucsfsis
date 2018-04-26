@@ -26,7 +26,6 @@
 require('../../config.php');
 require_once('edit_form.php');
 
-require_once('locallib.php');
 require_once('../../group/lib.php');
 
 $courseid = required_param('courseid', PARAM_INT);
@@ -120,7 +119,7 @@ if ($mform->is_cancelled()) {
     }
 
     $trace = new null_progress_trace();
-    enrol_ucsfsis_sync($trace, $course->id);
+    $enrol->sync($trace, $course->id);
     $trace->finished();
     redirect($returnurl);
 }
