@@ -26,7 +26,6 @@
 require('../../config.php');
 require_once('edit_form.php');
 
-require_once('locallib.php');
 require_once('../../group/lib.php');
 
 $courseid = required_param('courseid', PARAM_INT);

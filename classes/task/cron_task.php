@@ -75,7 +75,6 @@ class cron_task extends \core\task\scheduled_task {
         global $CFG, $DB;
 
         require_once($CFG->dirroot . '/enrol/ucsfsis/lib.php');
-        require_once($CFG->dirroot . '/enrol/ucsfsis/locallib.php');
         require_once($CFG->libdir . '/weblib.php');
 
         $enrol = enrol_get_plugin('ucsfsis');

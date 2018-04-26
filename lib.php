@@ -190,9 +190,6 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
             return 2;
         }
 
-        // require_once("$CFG->dirroot/enrol/ucsfsis/locallib.php");
-        // enrol_ucsfsis_sync($trace, $courseid);
-
         // Unfortunately this may take a long time, this script can be interrupted without problems.
         @set_time_limit(0);
         raise_memory_limit(MEMORY_HUGE);
@@ -200,13 +197,8 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
         $trace->output('Starting user enrolment synchronisation...');
 
         $allroles = get_all_roles();
-
-        // TODO: Replace $plugin with $this
-        $plugin = $this;
-        $http   = $plugin->get_http_client();
-
-        $unenrolaction = $plugin->get_config('unenrolaction', ENROL_EXT_REMOVED_UNENROL);
-
+        $http = $this->get_http_client();
+        $unenrolaction = $this->get_config('unenrolaction', ENROL_EXT_REMOVED_UNENROL);
         $onecourse = $courseid ? "AND e.courseid = :courseid" : "";
         $sql = "SELECT *
                 FROM {enrol} e
@@ -253,13 +245,13 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
                     $ue = $DB->get_record('user_enrolments', array('enrolid' => $instance->id, 'userid' => $userid));
                     if (!empty($ue)) {
                         if ($status !== (int)$ue->status) {
-                            $plugin->enrol_user($instance, $userid, $instance->roleid, 0, 0, $status);
+                            $this->enrol_user($instance, $userid, $instance->roleid, 0, 0, $status);
                             $trace->output("changing enrollment status to '{$status}' from '{$ue->status}': userid $userid ==> courseid ".$instance->courseid, 1);
                         }//  else {
                         //     $trace->output("already enrolled do nothing: status = '{$ue->status}', userid $userid ==> courseid ".$instance->courseid, 1);
                         // }
                     } else {
-                        $plugin->enrol_user($instance, $userid, $instance->roleid, 0, 0, $status);
+                        $this->enrol_user($instance, $userid, $instance->roleid, 0, 0, $status);
                         $trace->output("enrolling with $status status: userid $userid ==> courseid ".$instance->courseid, 1);
                     }
                     $enrolleduserids[] = $userid;
@@ -278,12 +270,12 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
                 foreach($rs as $ue) {
                     if ($unenrolaction == ENROL_EXT_REMOVED_UNENROL) {
                         // Remove enrolment together with group membership, grades, preferences, etc.
-                        $plugin->unenrol_user($instance, $ue->userid);
+                        $this->unenrol_user($instance, $ue->userid);
                         $trace->output("unenrolling: $ue->userid ==> ".$instance->courseid, 1);
                     } else if ($unenrolaction == ENROL_EXT_REMOVED_SUSPEND or $unenrolaction == ENROL_EXT_REMOVED_SUSPENDNOROLES) {
                         // Suspend enrolments.
                         if ($ue->status != ENROL_USER_SUSPENDED) {
-                            $plugin->update_user_enrol($instance, $ue->userid, ENROL_USER_SUSPENDED);
+                            $this->update_user_enrol($instance, $ue->userid, ENROL_USER_SUSPENDED);
                             $trace->output("suspending: userid ".$ue->userid." ==> courseid ".$instance->courseid, 1);
                         }
                         if ($unenrolaction == ENROL_EXT_REMOVED_SUSPENDNOROLES) {
@@ -995,7 +987,6 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
     private function test_usinglimitandoffsetreturnsamelist($url, $api) {
         global $CFG, $OUTPUT;
 
-        require_once("$CFG->dirroot/enrol/ucsfsis/locallib.php");
         $array_to_assoc = function($arr) {
             $output = array();
             foreach ($arr as $key=>$value) {
