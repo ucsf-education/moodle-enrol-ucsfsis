@@ -577,6 +577,10 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
             $instanceid = $this->add_instance($course, (array)$data);
         }
         $step->set_mapping('enrol', $oldid, $instanceid);
+
+        $trace = new null_progress_trace();
+        $this->sync($trace, $course->id);
+        $trace->finished();
     }
 
     /**
