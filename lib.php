@@ -648,9 +648,9 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
     }
 
     /**
-     * Put commonly used cache data in here, so that it can be prefetched by the cron
+     * Put last 6 terms of subjects data in cache data here. Will be called by cron.
      */
-    public function prefetch_common_cache_data() {
+    public function prefetch_subjects_data_to_cache() {
         $prefetch_term_num = 5;
         $oauth = $this->get_http_client();
 
@@ -663,6 +663,26 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
                         break;
                     }
                     $result = $oauth->get_subjects_in_term($term->id);
+                }
+            }
+        }
+    }
+
+    /**
+     * Put last 6 terms of courses data in cache data here. Will be called by cron.
+     */
+    public function prefetch_courses_data_to_cache() {
+        $prefetch_term_num = 5;
+        $oauth = $this->get_http_client();
+
+        if ($oauth->is_logged_in()) {
+            // Terms data
+            $terms = $oauth->get_active_terms();
+            if (!empty($terms)) {
+                foreach ($terms as $key => $term) {
+                    if ($key > $prefetch_term_num) {
+                        break;
+                    }
                     $result = $oauth->get_courses_in_term($term->id);
                 }
             }
@@ -756,14 +776,6 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
         if (empty($hosturl)) {
             $hosturl = ucsfsis_oauth_client::DEFAULT_HOST;
         }
-        // $result = $oauth->get($hosturl.'/general/sis/1.0/courses/1919');
-        // echo "RESULT get('/courses/1919') = <br />";
-        // var_dump($result);
-
-        // // $result = $oauth->get_course('1919');
-        // $result = $oauth->get_course('44980');
-        // echo "RESULT get_course('44980') = <br />";
-        // var_dump($result);
 
         $result = $oauth->get_all_data($hosturl.'/general/sis/1.0/schools');
         echo "School Data: <br />";
@@ -776,20 +788,28 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
         var_dump($terms);
 
         $result = $oauth->get_all_data($hosturl.'/general/sis/1.0/departments');
-        echo "Department Data = <br />";
+        echo "Department Data: <br />";
         var_dump($result);
 
         // Actual requests used in code (and cache them).
         if (!empty($terms)) {
             foreach ($terms as $key => $term) {
-                if ($key > 3) {
+                if ($key > 4) {
                     break;
                 }
                 $result = $oauth->get_subjects_in_term($term->id);
-                echo "Subject Data in Term " . $term->name;
+                echo "Subject Data in Term " . $term->name . " (" . count($result) ."): <br />";
                 var_dump($result);
+            }
+        }
+
+        if (!empty($terms)) {
+            foreach ($terms as $key => $term) {
+                if ($key > 4) {
+                    break;
+                }
                 $result = $oauth->get_courses_in_term($term->id);
-                echo "Course Data in Term " . $term->name;
+                echo "Course Data in Term " . $term->name . " (" . count($result) ."): <br />";
                 var_dump($result);
             }
         }

@@ -92,14 +92,9 @@ class cron_task extends \core\task\scheduled_task {
             // Reset startindex for next run
             $startindex = 0;    // start from beginning again
             $enrol->set_config('last_sync_course_index', $startindex);
-            // $courses = $DB->get_records( 'enrol',
-            //                              array( 'enrol'=>'ucsfsis', 'status' => '0' ),
-            //                              'timecreated',
-            //                              'id, courseid, roleid, customint1',
-            //                              $startindex, $numlimit );
 
-            // Prefetch common cache data
-            $enrol->prefetch_common_cache_data();
+            // Prefetch courses data to cache
+            $enrol->prefetch_courses_data_to_cache();
             return;
         }
 
@@ -113,6 +108,8 @@ class cron_task extends \core\task\scheduled_task {
 
         if ($startindex + $numupdated >= $total) {
             $enrol->set_config('last_completed_time', time());
+            // Prefetch subjects data to cache
+            $enrol->prefetch_subjects_data_to_cache();
         }
 
         $trace->finished();
