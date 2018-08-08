@@ -103,11 +103,6 @@ class enrol_ucsfsis_edit_form extends moodleform {
         // Add header text
         $mform->addElement('header','general', get_string('pluginname_short', 'enrol_ucsfsis'));
 
-        // Display notice if this enrolment is converted from CLEAE
-        if (isset($instance->customchar1) && !empty($instance->customchar1)) {
-            $mform->addElement('html', $OUTPUT->notification(get_string('convertedfrom', 'enrol_ucsfsis', $instance->customchar1), 'notifysuccess'));
-        }
-
         // Add 'Enable' Select box
         $options = array(ENROL_INSTANCE_ENABLED  => get_string('yes'),
                          ENROL_INSTANCE_DISABLED => get_string('no'));
