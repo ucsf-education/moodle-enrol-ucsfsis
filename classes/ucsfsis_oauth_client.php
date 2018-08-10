@@ -533,7 +533,7 @@ class ucsfsis_oauth_client extends oauth2_client
             $this->cache = $this->longer_cache;
         }
 
-        $termid = trim($term_id);
+        $termid = $term_id;
         $uri = $this->api_url()."/terms/$termid/subjects?sort=name";
         $ret = $this->get_all_data($uri);
 
@@ -553,7 +553,7 @@ class ucsfsis_oauth_client extends oauth2_client
      */
     public function get_course($course_id)
     {
-        $courseid = trim($course_id);
+        $courseid = $course_id;
         $uri = $this->api_url()."/courses/$courseid";
         $ret = $this->get_data($uri);
 
@@ -575,7 +575,7 @@ class ucsfsis_oauth_client extends oauth2_client
             $this->cache = $this->longer_cache;
         }
 
-        $termid = trim($term_id);
+        $termid = $term_id;
         $uri = $this->api_url()."/terms/$termid/courses?sort=courseNumber";
         $ret = $this->get_all_data($uri);
 
@@ -601,7 +601,7 @@ class ucsfsis_oauth_client extends oauth2_client
         $this->cache = null;
 
 
-        $courseid = trim($course_id);
+        $courseid = $course_id;
         $uri = $this->api_url()."/courseEnrollments?courseId=$courseid";
         $enrollment = $this->get_all_data($uri);
 
@@ -623,12 +623,12 @@ class ucsfsis_oauth_client extends oauth2_client
                 switch ($e->status) {
                     case "A":
                         $obj->status = ENROL_USER_ACTIVE;
-                        $enrol_list[trim($e->student->empno)] = $obj;
+                        $enrol_list[$e->student->empno] = $obj;
                         break;
                     case "I":
-                        if (!isset($enrol_list[trim($e->student->empno)])) {
+                        if (!isset($enrol_list[$e->student->empno])) {
                             $obj->status = ENROL_USER_SUSPENDED;
-                            $enrol_list[trim($e->student->empno)] = $obj;
+                            $enrol_list[$e->student->empno] = $obj;
                         }
                         break;
                     case "S":

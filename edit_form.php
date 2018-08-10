@@ -30,25 +30,24 @@ require_once("lib.php");
 
 class enrol_ucsfsis_edit_form extends moodleform {
 
-    // @TODO Cache the api calls.  If it's in the cache, don't bother to make the call again.
-    // @TODO Update Course list in definition_after_data()
-
-    function definition() {
-        global $CFG, $DB, $PAGE, $OUTPUT;
+    /**
+     * @inheritdoc
+     * @throws coding_exception
+     * @throws moodle_exception
+     */
+    public function definition() {
+        global $PAGE, $OUTPUT;
 
         $mform  = $this->_form;
+        /**
+         * @var \stdClass $instance
+         * @var enrol_ucsfsis_plugin $enrol
+         * @var \stdClass $course
+         */
         list($instance, $enrol, $course) = $this->_customdata;
         $context = context_course::instance($course->id);
 
-        // TODO: Improve AJAX calls, instead of just simulate a click button.
-        // $PAGE->requires->yui_module( 'moodle-enrol_ucsfsis-groupchoosers',
-        //                              'M.enrol_ucsfsis.init_groupchoosers',
-        //                              array(array('formid' => $mform->getAttribute('id'),
-        //                                          'courseid' => $course->id)) );
-        $PAGE->requires->js_init_call('M.enrol_ucsfsis.init',
-                                      array(array('formid' => $mform->getAttribute('id'),
-                                                  'courseid' => $course->id)));
-
+        /** @var \enrol_ucsfsis\ucsfsis_oauth_client $http */
         $http  = $enrol->get_http_client();
         $sisisdown = !$http->is_logged_in();
 
@@ -58,9 +57,11 @@ class enrol_ucsfsis_edit_form extends moodleform {
             $terms = $http->get_active_terms();
         }
 
-        $selected_term = $selected_subject = $selected_course = '';
+        $selected_term
+            = $selected_subject
+            = $selected_course
+            = '';
 
-        // Can I refactor this part?
         if (empty($terms)) {
             $sisisdown = true;
             $termoptions = array('' => get_string('choosedots'));
@@ -72,21 +73,21 @@ class enrol_ucsfsis_edit_form extends moodleform {
                 // Skip if enrollmentStartTime is in the future.
                 $enrollmentStartTime = strtotime($term->fileDateForEnrollment->enrollmentStart);
                 if ( time() < $enrollmentStartTime ) {
-                    $termoptions[trim($term->id)] = trim($term->id) . ": ". trim($term->name)
+                    $termoptions[$term->id] = $term->id . ": ". $term->name
                                                   . get_string('enrolmentstartson', 'enrol_ucsfsis',  date("M j, Y", $enrollmentStartTime));
                 } else {
                     if (empty($selected_term)) {
-                        $selected_term = trim($term->id);
+                        $selected_term = $term->id;
                     }
-                    $termoptions[trim($term->id)] = trim($term->id) . ": ". trim($term->name);
+                    $termoptions[$term->id] = $term->id . ": ". $term->name;
                 }
             }
 
             if ($instance->id) {
                 $siscourseid = $instance->customint1;
                 $siscourse = $http->get_course($siscourseid);
-                $selected_term = trim($siscourse->term);
-                $selected_subject = trim($siscourse->subjectForCorrespondTo);
+                $selected_term = $siscourse->term;
+                $selected_subject = $siscourse->subjectForCorrespondTo;
                 $selected_course = $siscourseid;
             }
             $selected_term = isset($instance->submitted_termid) ?  $instance->submitted_termid : $selected_term;
@@ -125,8 +126,8 @@ class enrol_ucsfsis_edit_form extends moodleform {
             $subjectcourseoptions[''] = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
             if (!empty($subjects)) {
                 foreach ($subjects as $subject) {
-                    $subjectoptions[trim($subject->id)] = trim($subject->code) . ": " . $subject->name . " (" . $subject->id . ")";
-                    $subjectcourseoptions[trim($subject->id)] = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
+                    $subjectoptions[$subject->id] = $subject->code . ": " . $subject->name . " (" . $subject->id . ")";
+                    $subjectcourseoptions[$subject->id] = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
                 }
             }
         }
@@ -136,18 +137,15 @@ class enrol_ucsfsis_edit_form extends moodleform {
             if (!empty($courses)) {
                 foreach ($courses as $course) {
                     if (empty($selected_course)) {
-                        $selected_course = trim($course->id);
+                        $selected_course = $course->id;
                     }
                     $instructorname = '';
                     if (!empty($course->userForInstructorOfRecord)) {
                         $instr = $course->userForInstructorOfRecord;
                         $instructorname = " ($instr->firstName $instr->lastName)";
                     }
-                    // $subjectcourseoptions[trim($course->subjectForCorrespondTo)]['"'.trim($course->id).'"']
-                    // Course index needs to be a string (by prefixing with a space); otherwise, it will be sorted as Int.
-                    $subjectcourseoptions[trim($course->subjectForCorrespondTo)][" ".trim($course->id)]
-                                                                                    // = trim($course->courseNumber) . ": " . $course->name . " (" . $course->id .")";
-                                                                                    = trim($course->courseNumber) . ": " . $course->name . $instructorname;
+                    $subjectcourseoptions[$course->subjectForCorrespondTo][" " . $course->id]
+                        = $course->courseNumber . ": " . $course->name . $instructorname;
                 }
             }
         }
@@ -187,13 +185,5 @@ class enrol_ucsfsis_edit_form extends moodleform {
         }
 
         $this->set_data($instance);
-    }
-
-    function validation($data, $files) {
-        global $DB;
-
-        $errors = parent::validation($data, $files);
-
-        return $errors;
     }
 }

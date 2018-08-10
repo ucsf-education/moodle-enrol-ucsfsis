@@ -95,7 +95,7 @@ if ($mform->is_cancelled()) {
     // TODO: Might need to check selectsubjectcourse[1] isset.
     if ($instance->id) {
         $instance->roleid          = $data->roleid;
-        $instance->customint1      = trim($data->selectsubjectcourse[1]);
+        $instance->customint1      = $data->selectsubjectcourse[1];
         // Clear SIS course id if exists
         $instance->customchar1     = '';
         $instance->customtext1     = '';  // get the descriptive course name here.
@@ -113,7 +113,7 @@ if ($mform->is_cancelled()) {
     } else {
         $fields = array(
             'status'          => $data->status,
-            'customint1'      => trim($data->selectsubjectcourse[1]),
+            'customint1'      => $data->selectsubjectcourse[1],
             'roleid'          => $data->roleid);
         $enrol->add_instance($course, $fields);
     }

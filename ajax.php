@@ -74,8 +74,8 @@ switch ($action) {
             $subjects = $http->get_subjects_in_term($termid);
             if (!empty($subjects)) {
                 foreach ($subjects as $subject) {
-                    $subjectoptions[trim($subject->id)] = trim($subject->code) . ": " . $subject->name;
-                    $subjectcourseoptions[trim($subject->id)] = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
+                    $subjectoptions[$subject->id] = $subject->code . ": " . $subject->name;
+                    $subjectcourseoptions[$subject->id] = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
                 }
             }
 
@@ -87,11 +87,9 @@ switch ($action) {
                             $instr = $course->userForInstructorOfRecord;
                             $instructorname = " ($instr->firstName $instr->lastName)";
                         }
-                        // $subjectcourseoptions[trim($course->subjectForCorrespondTo)]['"'.trim($course->id).'"']
                         // Course index needs to be a string (by prefixing with a space); otherwise, it will be sorted as Int.
-                        $subjectcourseoptions[trim($course->subjectForCorrespondTo)][" ".trim($course->id)]
-                                                                                        // = trim($course->courseNumber) . ": " . $course->name . " (" . $course->id .")";
-                                                                                        = trim($course->courseNumber) . ": " . $course->name . $instructorname;
+                        $subjectcourseoptions[$course->subjectForCorrespondTo][" ".$course->id]
+                            = $course->courseNumber . ": " . $course->name . $instructorname;
                 }
             }
         }

@@ -47,30 +47,6 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
             if (!empty($instance->roleid) and $role = $DB->get_record('role', array('id'=>$instance->roleid))) {
                 $iname .= ' (' . role_get_name($role, context_course::instance($instance->courseid, IGNORE_MISSING)) . ')';
             }
-            // Append details of selected course (disable for now until we implement this in edit_form.php
-            // if (!empty($instance->customtext1)) {
-            //     $iname .= '<br /><small>'.$instance->customtext1.'</small><br />';
-            // } else {
-            //     $http = $this->get_http_client();
-            //     if ($http->is_logged_in()) {
-            //         $course = $http->get_course($instance->customint1);
-            //         if (!empty($course)) {
-            //             $deptid = trim($course->departmentForBelongTo);
-            //             $courseNumber = trim($course->courseNumber);
-            //             $courseName = trim($course->name);
-            //             $term = trim($course->term);
-            //             $text1 = "<strong>{$deptid}{$courseNumber} {$courseName}</strong>, {$term}";
-
-            //             // Save customtext1
-            //             $inst = new stdClass;
-            //             $inst->id = $instance->id;
-            //             $inst->customtext1 = $text1;
-            //             $DB->update_record('enrol', $inst);
-
-            //             $iname .= '<br /><small>'.$text1.'</small><br />';
-            //         }
-            //     }
-            // }
         }
         return $iname;
     }
@@ -209,7 +185,7 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
         $instances = $DB->get_recordset_sql($sql, $params);
 
         foreach ($instances as $instance) {
-            $siscourseid = trim($instance->customint1);
+            $siscourseid = $instance->customint1;
             $context = context_course::instance($instance->courseid);
 
             $trace->output("Synchronizing course {$instance->courseid}...");
