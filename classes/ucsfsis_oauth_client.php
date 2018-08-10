@@ -305,8 +305,9 @@ class ucsfsis_oauth_client extends oauth2_client {
     /**
      * Upgrade a authorization token from oauth 2.0 to an access token
      *
-     * @param  string $code the code returned from the oauth authenticaiton
-     * @return boolean true if token is upgraded succesfully
+     * @param string $username
+     * @param string $password
+     * @return boolean true if token is upgraded successfully
      * @throws moodle_exception
      */
     public function log_in($username, $password) {
