@@ -20,7 +20,8 @@ defined('MOODLE_INTERNAL') || die;
  * @author     Carson Tam <carson.tam@ucsf.edu>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class ucsfsis_oauth_client extends oauth2_client {
+class ucsfsis_oauth_client extends oauth2_client
+{
     /** @const API URL */
     const DEFAULT_HOST = 'https://unified-api.ucsf.edu';
     const API_URL = '/general/sis/1.0';
@@ -36,37 +37,41 @@ class ucsfsis_oauth_client extends oauth2_client {
     /** @var string refresh token */
     protected $refreshtoken = '';
     /** @var bool Caches http request contents that do not change often like schools, terms, departments, subjects...etc */
-    public  $longer_cache = false;    // Cache for 24 hours.
+    public $longer_cache = false;    // Cache for 24 hours.
 
     /**
      * Returns the auth url for OAuth 2.0 request
      * @return string the auth url
      */
-    protected function auth_url() {
-        return $this->base_url . self::AUTH_URL;
+    protected function auth_url()
+    {
+        return $this->base_url.self::AUTH_URL;
     }
 
     /**
      * Returns the token url for OAuth 2.0 request
      * @return string the auth url
      */
-    protected function token_url() {
-        return $this->base_url . self::TOKEN_URL;
+    protected function token_url()
+    {
+        return $this->base_url.self::TOKEN_URL;
     }
 
     /**
      * Returns the url for resource API request
      * @return string the resource API url
      */
-    public function api_url() {
-        return $this->base_url . self::API_URL;
+    public function api_url()
+    {
+        return $this->base_url.self::API_URL;
     }
 
     /**
      * @inheritdoc
      * @throws \moodle_exception
      */
-    public function __construct($clientid, $clientsecret, $username, $password, $host = null, $enablecache = true) {
+    public function __construct($clientid, $clientsecret, $username, $password, $host = null, $enablecache = true)
+    {
 
         // Don't care what the returnurl is right now until we start implementing callbacks
         $returnurl = new moodle_url(null);
@@ -79,7 +84,7 @@ class ucsfsis_oauth_client extends oauth2_client {
         $this->password = $password;
 
         // We need these in the header all time.
-        $this->setHeader(array('client_id: ' . $clientid, 'client_secret: ' . $clientsecret));
+        $this->setHeader(array('client_id: '.$clientid, 'client_secret: '.$clientsecret));
 
         if (!empty($host)) {
             $this->base_url = $host;
@@ -96,7 +101,8 @@ class ucsfsis_oauth_client extends oauth2_client {
      * @inheritdoc
      * @throws moodle_exception
      */
-    public function is_logged_in() {
+    public function is_logged_in()
+    {
         // Has the token expired?
         $accesstoken = $this->get_accesstoken();
         if (isset($accesstoken->expires) && time() >= $accesstoken->expires) {
@@ -136,10 +142,11 @@ class ucsfsis_oauth_client extends oauth2_client {
     /**
      * @inheritdoc
      */
-    protected function request($url, $options = array(), $acceptheader = 'application/json') {
+    protected function request($url, $options = array(), $acceptheader = 'application/json')
+    {
 
         // We need these in the header all time.
-        $this->setHeader(array('client_id: ' . $this->get_clientid(), 'client_secret: ' . $this->get_clientsecret()));
+        $this->setHeader(array('client_id: '.$this->get_clientid(), 'client_secret: '.$this->get_clientsecret()));
 
         $response = parent::request($url, $options, $acceptheader);
 
@@ -149,7 +156,8 @@ class ucsfsis_oauth_client extends oauth2_client {
     /**
      * @inheritdoc
      */
-    protected function store_token($token) {
+    protected function store_token($token)
+    {
         global $CFG, $SESSION;
 
         require_once($CFG->libdir.'/moodlelib.php');
@@ -176,7 +184,8 @@ class ucsfsis_oauth_client extends oauth2_client {
      *
      * @param \stdClass|null $token token object to store or null to clear
      */
-    protected function store_refresh_token($token) {
+    protected function store_refresh_token($token)
+    {
         global $CFG;
 
         require_once($CFG->libdir.'/moodlelib.php');
@@ -194,7 +203,8 @@ class ucsfsis_oauth_client extends oauth2_client {
      * @inheritdoc
      * @throws \dml_exception
      */
-    protected function get_stored_token() {
+    protected function get_stored_token()
+    {
         global $CFG;
 
         require_once($CFG->libdir.'/moodlelib.php');
@@ -216,7 +226,8 @@ class ucsfsis_oauth_client extends oauth2_client {
      * @return string|null token string
      * @throws \dml_exception
      */
-    protected function get_stored_refresh_token() {
+    protected function get_stored_refresh_token()
+    {
         global $CFG;
 
         require_once($CFG->libdir.'/moodlelib.php');
@@ -237,14 +248,16 @@ class ucsfsis_oauth_client extends oauth2_client {
      *
      * @return string
      */
-    public function get_refreshtoken() {
+    public function get_refreshtoken()
+    {
         return $this->refreshtoken;
     }
 
     /**
      * @inheritdoc
      */
-    protected function use_http_get() {
+    protected function use_http_get()
+    {
         return true;
     }
 
@@ -255,9 +268,11 @@ class ucsfsis_oauth_client extends oauth2_client {
      * @return boolean true if token is refreshed successfully
      * @throws moodle_exception
      */
-    protected function refresh_token($code) {
+    protected function refresh_token($code)
+    {
 
-        $params = array('client_id' => $this->get_clientid(),
+        $params = array(
+            'client_id' => $this->get_clientid(),
             'client_secret' => $this->get_clientsecret(),
             'grant_type' => 'refresh_token',
             'refresh_token' => $code,
@@ -310,13 +325,16 @@ class ucsfsis_oauth_client extends oauth2_client {
      * @return boolean true if token is upgraded successfully
      * @throws moodle_exception
      */
-    public function log_in($username, $password) {
+    public function log_in($username, $password)
+    {
 
-        $params = array('client_id' => $this->get_clientid(),
+        $params = array(
+            'client_id' => $this->get_clientid(),
             'client_secret' => $this->get_clientsecret(),
             'grant_type' => 'password',
             'username' => $username,
-            'password' => $password);
+            'password' => $password
+        );
 
         // Requests can either use http GET or POST.
         // unified-api only works with GET for now.
@@ -362,7 +380,8 @@ class ucsfsis_oauth_client extends oauth2_client {
      * @param  string URI to the resources
      * @return array|bool an array objects in data retrieved from the URI, or false when there's an error.
      */
-    protected function get_data($uri) {
+    protected function get_data($uri)
+    {
         $result = $this->get($uri);
 
         if (empty($result)) {
@@ -385,24 +404,26 @@ class ucsfsis_oauth_client extends oauth2_client {
      * @param  string URI to the resources
      * @return array|bool an array objects in data retrieved from the URI, or false when there's an error.
      */
-    public function get_all_data($uri) {
-        $limit    = 100;
-        $offset   = 0;
-        $data     = null;
+    public function get_all_data($uri)
+    {
+        $limit = 100;
+        $offset = 0;
+        $data = null;
         $expected_list_size = null;
         $ret_data = false;
 
 
-        $query_prefix = strstr($uri,'?') ? '&' : '?';
+        $query_prefix = strstr($uri, '?') ? '&' : '?';
 
         do {
-            $modified_uri = $uri . $query_prefix . "limit=$limit&offset=$offset";
+            $modified_uri = $uri.$query_prefix."limit=$limit&offset=$offset";
 
             $result = $this->get($modified_uri);
             $response = $result;   // save response for debugging
 
             if (empty($result)) {
                 error_log("API call '$modified_uri' returned empty.");
+
                 return false;
             }
 
@@ -416,22 +437,26 @@ class ucsfsis_oauth_client extends oauth2_client {
                 } else {
                     // return false on any other error
                     error_log("API call '$modified_uri' returned error: {$result->error}");
+
                     return false;
                 }
-            } else if (isset($result->data)) {
-                $data = $result->data;
-
-                if (!empty($data)) {
-                    if (empty($ret_data)) {
-                        $ret_data = array();
-                    }
-                    $ret_data = array_merge($ret_data, $data);
-                    $offset += $limit;
-                }
             } else {
-                // something went wrong, no data, no error.
-                error_log("API call '$modified_uri' returned unexpected response: {$response}");
-                return false;
+                if (isset($result->data)) {
+                    $data = $result->data;
+
+                    if (!empty($data)) {
+                        if (empty($ret_data)) {
+                            $ret_data = array();
+                        }
+                        $ret_data = array_merge($ret_data, $data);
+                        $offset += $limit;
+                    }
+                } else {
+                    // something went wrong, no data, no error.
+                    error_log("API call '$modified_uri' returned unexpected response: {$response}");
+
+                    return false;
+                }
             }
 
         } while (!empty($data));
@@ -441,11 +466,17 @@ class ucsfsis_oauth_client extends oauth2_client {
             if ($expected_list_size == count($ret_data)) {
                 return $ret_data;
             } else {
-                error_log("API call '$modified_uri' did not return same number of items as it claims which is $expected_list_size, actual is ".count($ret_data).".");
+                error_log(
+                    "API call '$modified_uri' did not return same number of items as it claims which is $expected_list_size, actual is ".count(
+                        $ret_data
+                    )."."
+                );
+
                 return false;
             }
         }
 
+        $ret_data = $this->trim_data($ret_data);
         return $ret_data;
     }
 
@@ -455,7 +486,8 @@ class ucsfsis_oauth_client extends oauth2_client {
      *
      * @return array|bool Array of term objects, or false if none could be found.
      */
-    public function get_active_terms() {
+    public function get_active_terms()
+    {
         // Save short term cache
         $cache = $this->cache;
         if (isset($this->cache)) {
@@ -463,7 +495,7 @@ class ucsfsis_oauth_client extends oauth2_client {
         }
 
         // $uri = $this->api_url() . '/terms?fields=id,name,fileDateForEnrollment&sort=-termStartDate';
-        $uri = $this->api_url() . '/terms?sort=-termStartDate';
+        $uri = $this->api_url().'/terms?sort=-termStartDate';
         $terms = $this->get_all_data($uri);
 
         // restore short term cache
@@ -479,8 +511,10 @@ class ucsfsis_oauth_client extends oauth2_client {
                     $ret[] = $term;
                 }
             }
-            return  $ret;
+
+            return $ret;
         }
+
         return false;
     }
 
@@ -491,7 +525,8 @@ class ucsfsis_oauth_client extends oauth2_client {
      * @param  string Term ID
      * @return array  Array of subject objects.
      */
-    public function get_subjects_in_term($term_id) {
+    public function get_subjects_in_term($term_id)
+    {
         if (isset($this->cache)) {
             // Save short term cache
             $cache = $this->cache;
@@ -499,7 +534,7 @@ class ucsfsis_oauth_client extends oauth2_client {
         }
 
         $termid = trim($term_id);
-        $uri = $this->api_url() . "/terms/$termid/subjects?sort=name";
+        $uri = $this->api_url()."/terms/$termid/subjects?sort=name";
         $ret = $this->get_all_data($uri);
 
         // restore short term cache
@@ -507,7 +542,7 @@ class ucsfsis_oauth_client extends oauth2_client {
             $this->cache = $cache;
         }
 
-        return  $ret;
+        return $ret;
     }
 
     /**
@@ -516,12 +551,13 @@ class ucsfsis_oauth_client extends oauth2_client {
      * @param  string Course ID
      * @return \stdClass|bool The requested course object, or false if none could be found.
      */
-    public function get_course($course_id) {
+    public function get_course($course_id)
+    {
         $courseid = trim($course_id);
-        $uri = $this->api_url() . "/courses/$courseid";
+        $uri = $this->api_url()."/courses/$courseid";
         $ret = $this->get_data($uri);
 
-        return  $ret;
+        return $ret;
     }
 
     /**
@@ -531,7 +567,8 @@ class ucsfsis_oauth_client extends oauth2_client {
      * @param  string Term ID
      * @return array  Array of course objects.
      */
-    public function get_courses_in_term($term_id) {
+    public function get_courses_in_term($term_id)
+    {
         // Save short term cache
         $cache = $this->cache;
         if (isset($this->cache)) {
@@ -539,7 +576,7 @@ class ucsfsis_oauth_client extends oauth2_client {
         }
 
         $termid = trim($term_id);
-        $uri = $this->api_url() . "/terms/$termid/courses?sort=courseNumber";
+        $uri = $this->api_url()."/terms/$termid/courses?sort=courseNumber";
         $ret = $this->get_all_data($uri);
 
         // restore short term cache
@@ -547,7 +584,7 @@ class ucsfsis_oauth_client extends oauth2_client {
             $this->cache = $cache;
         }
 
-        return  $ret;
+        return $ret;
     }
 
     /**
@@ -556,7 +593,8 @@ class ucsfsis_oauth_client extends oauth2_client {
      * @param  int   Course ID
      * @return array|bool An array of enrollment object or false if error.
      */
-    public function get_course_enrollment($course_id) {
+    public function get_course_enrollment($course_id)
+    {
 
         // Never cache the enrollment data
         $cache = $this->cache;
@@ -564,7 +602,7 @@ class ucsfsis_oauth_client extends oauth2_client {
 
 
         $courseid = trim($course_id);
-        $uri = $this->api_url() . "/courseEnrollments?courseId=$courseid";
+        $uri = $this->api_url()."/courseEnrollments?courseId=$courseid";
         $enrollment = $this->get_all_data($uri);
 
         // restore the cache object.
@@ -579,7 +617,7 @@ class ucsfsis_oauth_client extends oauth2_client {
 
         foreach ($enrollment as $e) {
             if (!empty($e->student) && !empty($e->student->empno)) {
-                $obj       = new \stdClass();
+                $obj = new \stdClass();
                 $obj->ucid = $e->student->empno;
 
                 switch ($e->status) {
@@ -606,5 +644,29 @@ class ucsfsis_oauth_client extends oauth2_client {
         } else {
             return false;
         }
+    }
+
+    /**
+     * Trims whitespace off all strings and string properties of objects in a given list of strings or objects.
+     * @param array $data The raw list of data.
+     * @return array The trimmed data
+     */
+    protected function trim_data(array $data) {
+        array_walk($data, function($item) {
+            if(is_object($item)) {
+                $properties = get_object_vars($item);
+                if ($properties) {
+                    foreach($properties as $key => $value) {
+                        if (is_string($value)) {
+                            $item->$key = trim($value);
+                        }
+                    }
+                }
+            } elseif (is_string($item)) {
+                $item = trim($item);
+            }
+            return $item;
+        });
+        return $data;
     }
 }
