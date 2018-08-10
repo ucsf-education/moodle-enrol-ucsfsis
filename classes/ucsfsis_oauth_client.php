@@ -647,26 +647,25 @@ class ucsfsis_oauth_client extends oauth2_client
     }
 
     /**
-     * Trims whitespace off all strings and string properties of objects in a given list of strings or objects.
-     * @param array $data The raw list of data.
-     * @return array The trimmed data
+     * Recursively trims whitespace off of all text in given input.
+     * @param mixed $data The raw data.
+     * @return array The trimmed data.
      */
-    protected function trim_data(array $data) {
-        array_walk($data, function($item) {
-            if(is_object($item)) {
-                $properties = get_object_vars($item);
-                if ($properties) {
-                    foreach($properties as $key => $value) {
-                        if (is_string($value)) {
-                            $item->$key = trim($value);
-                        }
-                    }
+    public static function trim_data($data) {
+
+        if (is_string($data)) {
+            $data = trim($data);
+        } else if (is_object($data)) {
+            $properties = get_object_vars($data);
+            if ($properties) {
+                foreach ($properties as $key => $value) {
+                    $data->$key = self::trim_data($value);
                 }
-            } elseif (is_string($item)) {
-                $item = trim($item);
             }
-            return $item;
-        });
+        } else  if (is_array($data)) {
+            array_walk($data,  array(self::class, 'trim_data'));
+        }
+
         return $data;
     }
 }
