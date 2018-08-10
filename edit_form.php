@@ -39,6 +39,7 @@ class enrol_ucsfsis_edit_form extends moodleform {
         global $PAGE, $OUTPUT;
 
         $mform  = $this->_form;
+
         /**
          * @var \stdClass $instance
          * @var enrol_ucsfsis_plugin $enrol
@@ -49,7 +50,13 @@ class enrol_ucsfsis_edit_form extends moodleform {
 
         /** @var \enrol_ucsfsis\ucsfsis_oauth_client $http */
         $http  = $enrol->get_http_client();
+
         $sisisdown = !$http->is_logged_in();
+
+        $selected_term
+            = $selected_subject
+            = $selected_course
+            = '';
 
         // Load Term options
         $terms = array();
@@ -57,16 +64,9 @@ class enrol_ucsfsis_edit_form extends moodleform {
             $terms = $http->get_active_terms();
         }
 
-        $selected_term
-            = $selected_subject
-            = $selected_course
-            = '';
-
         if (empty($terms)) {
             $sisisdown = true;
             $termoptions = array('' => get_string('choosedots'));
-            $subjectoptions = array('' => get_string('choosesubjectdots', 'enrol_ucsfsis'));
-            $subjectcourseoptions[''] = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
         } else {
             // Load $termoptions
             foreach($terms as $term) {
@@ -102,49 +102,49 @@ class enrol_ucsfsis_edit_form extends moodleform {
         $mform->addElement('header','general', get_string('pluginname_short', 'enrol_ucsfsis'));
 
         // Add 'Enable' Select box
-        $options = array(ENROL_INSTANCE_ENABLED  => get_string('yes'),
-                         ENROL_INSTANCE_DISABLED => get_string('no'));
+        $options = array(
+            ENROL_INSTANCE_ENABLED  => get_string('yes'),
+            ENROL_INSTANCE_DISABLED => get_string('no'),
+        );
         $mform->addElement('select', 'status', get_string('status', 'enrol_ucsfsis'), $options);
         $mform->addHelpButton('status', 'status', 'enrol_ucsfsis');
         if ($sisisdown)
             $mform->hardFreeze('status', $instance->status);
 
         // Add Term Select box
-        $element = &$mform->addElement('select', 'selectterm', get_string('term', 'enrol_ucsfsis'), $termoptions);
+        $mform->addElement('select', 'selectterm', get_string('term', 'enrol_ucsfsis'), $termoptions);
         $mform->addHelpButton('selectterm', 'term', 'enrol_ucsfsis');
-        $mform->registerNoSubmitButton('submitterm');
-        $mform->addElement('submit', 'submitterm', get_string('termoptionsupdate', 'enrol_ucsfsis'));
-        $element->setValue($selected_term);
 
         $subjects = array();
         $courses = array();
+        $subjectoptions = array('' => get_string('choosesubjectdots', 'enrol_ucsfsis'));
+        $courseoptions = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
 
-        // Populate subjectoptions
         if (!$sisisdown) {
-            $subjects = $http->get_subjects_in_term( $selected_term );
-            $subjectoptions = array('' => get_string('choosesubjectdots', 'enrol_ucsfsis'));
-            $subjectcourseoptions[''] = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
+            $subjects = $http->get_subjects_in_term($selected_term);
             if (!empty($subjects)) {
                 foreach ($subjects as $subject) {
                     $subjectoptions[$subject->id] = $subject->code . ": " . $subject->name . " (" . $subject->id . ")";
-                    $subjectcourseoptions[$subject->id] = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
                 }
             }
-        }
-        // Populate subjectcourseoptions
-        if (!$sisisdown) {
+
             $courses = $http->get_courses_in_term($selected_term);
-            if (!empty($courses)) {
+            if (!empty($courses) && $selected_subject) {
                 foreach ($courses as $course) {
+                    if ($selected_subject !== $course->subjectForCorrespondTo) {
+                        continue;
+                    }
+
                     if (empty($selected_course)) {
                         $selected_course = $course->id;
                     }
+
                     $instructorname = '';
                     if (!empty($course->userForInstructorOfRecord)) {
                         $instr = $course->userForInstructorOfRecord;
                         $instructorname = " ($instr->firstName $instr->lastName)";
                     }
-                    $subjectcourseoptions[$course->subjectForCorrespondTo][" " . $course->id]
+                    $courseoptions[" " . $course->id]
                         = $course->courseNumber . ": " . $course->name . $instructorname;
                 }
             }
@@ -158,11 +158,13 @@ class enrol_ucsfsis_edit_form extends moodleform {
             array($term_ids, $selected_term, $subjects, $selected_subject, $courses, $selected_course)
         );
 
-        $element = &$mform->addElement('hierselect', 'selectsubjectcourse', get_string('subject_course', 'enrol_ucsfsis'), '', '<br />');
-        $element->setOptions(array($subjectoptions, $subjectcourseoptions));
-        $mform->addGroupRule('selectsubjectcourse', get_string('required'), 'required', null, 'client');
-        $mform->addHelpButton('selectsubjectcourse', 'subject_course', 'enrol_ucsfsis');
-        $element->setValue(array($selected_subject, " ".$selected_course));
+        $element = $mform->addElement('select', 'selectsubject', get_string('subject', 'enrol_ucsfsis'), $subjectoptions);
+        $mform->addHelpButton('selectsubject', 'subject', 'enrol_ucsfsis');
+        $element->setValue($selected_subject);
+
+        $element = $mform->addElement('select', 'selectcourse', get_string('course', 'enrol_ucsfsis'), $courseoptions);
+        $mform->addHelpButton('selectcourse', 'course', 'enrol_ucsfsis');
+        $element->setValue(" " . $selected_course);
 
         if ($instance->id) {
             $roles = get_default_enrol_roles($context, $instance->roleid);
