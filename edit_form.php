@@ -155,7 +155,16 @@ class enrol_ucsfsis_edit_form extends moodleform {
         $PAGE->requires->js_call_amd(
             'enrol_ucsfsis/edit_form',
             'init',
-            array($term_ids, $selected_term, $subjects, $selected_subject, $courses, $selected_course)
+            array(
+                $term_ids,
+                $selected_term,
+                $subjects,
+                $selected_subject,
+                $courses,
+                $selected_course,
+                get_string('choosesubjectdots', 'enrol_ucsfsis'),
+                get_string('choosecoursedots', 'enrol_ucsfsis'),
+            )
         );
 
         $element = $mform->addElement('select', 'selectsubject', get_string('subject', 'enrol_ucsfsis'), $subjectoptions);
