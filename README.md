@@ -15,4 +15,4 @@ A Moodle Enrollment plugin for UCSF's Student Information Systems (SIS).
 * rename directory `moodle-enrol-ucsfsis` to `ucsfsis`
 * navigate on your moodle page to admin --> notifications and follow the instructions
 
-Copyright (c) 2015 The Regents of the University of California.
+Copyright (c) 2018 The Regents of the University of California.
