@@ -193,4 +193,16 @@ class enrol_ucsfsis_edit_form extends moodleform {
 
         $this->set_data($instance);
     }
+
+    /**
+     * HAAAAACKS!
+     * We need to expose the internal form in order to do some form submission processing further downstream
+     * on user-provided data that we won't have access to otherwise.
+     * [ST 2018/08/21]
+     * @return MoodleQuickForm
+     */
+    public function getForm()
+    {
+        return $this->_form;
+    }
 }
