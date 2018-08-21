@@ -42,10 +42,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str' ], function($, Aj
 
       for(i = 0, n = courses.length; i < n; i++) {
         course = courses[i];
-        if (! this.courses[selectedTermId].hasOwnProperty(course.subjectForCorrespondTo)) {
-          this.courses[selectedTermId][course.subjectForCorrespondTo] = [];
+        if (! this.courses[selectedTermId].hasOwnProperty(course.subjectId)) {
+          this.courses[selectedTermId][course.subjectId] = [];
         }
-        this.courses[selectedTermId][course.subjectForCorrespondTo].push(course);
+        this.courses[selectedTermId][course.subjectId].push(course);
       }
 
       $('#id_selectterm').change($.proxy(this, 'changeTerm'));
@@ -62,15 +62,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str' ], function($, Aj
         text: this.coursesDefaultOptionText
       }));
       $.each(courses, function(i, course) {
-        var text = course['courseNumber'] + ': ' + course['name'];
-        var instructor;
-        if(course.hasOwnProperty('userForInstructorOfRecord')) {
-          instructor = course['userForInstructorOfRecord'];
-          text = text + ' (' + instructor['firstName'] + ' ' + instructor['lastName'] + ')'
-        }
         courseSelect.append($('<option>', {
           value: course.id,
-          text: text,
+          text: course.title,
         }));
       });
     },
