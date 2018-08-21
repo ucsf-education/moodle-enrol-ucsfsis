@@ -7,6 +7,7 @@
 define(['jquery', 'core/ajax', 'core/notification', 'core/str' ], function($, Ajax, Notification, Str ) {
 
   return {
+    courseId: null,
     courses: {},
     subjects: {},
     termIds: [],
@@ -17,6 +18,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str' ], function($, Aj
     subjectsDefaultOptionText: '',
 
     init: function(
+      courseId,
       termIds,
       selectedTermId,
       subjects,
@@ -28,6 +30,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str' ], function($, Aj
     ) {
       var course, i, n;
 
+      this.courseId = courseId;
       this.selectedTermId = selectedTermId;
       this.selectedSubjectId = selectedSubjectId;
       this.selectedCourseId = selectedCourseId;
@@ -45,7 +48,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str' ], function($, Aj
         this.courses[selectedTermId][course.subjectForCorrespondTo].push(course);
       }
 
-      $('#id_selectTerm').change($.proxy(this, 'changeTerm'));
+      $('#id_selectterm').change($.proxy(this, 'changeTerm'));
       $('#id_selectsubject').change($.proxy(this, 'changeSubject'));
     },
 
@@ -73,8 +76,17 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str' ], function($, Aj
     },
 
     changeTerm: function(event) {
-      // @todo implement [ST 2018/08/10]
+      var termId = $(event.target).find(":selected").val();
+      Ajax.call([{
+        methodname: 'enrol_ucsfsis_get_subjects_and_courses_by_term',
+        args: {courseid: this.courseId, termid: termId},
+        done: this.processResponse.bind(this),
+        fail: Notification.exception
+      }]);
     },
-  }
 
+    processResponse: function(response) {
+      console.log(response);
+    }
+  }
 });

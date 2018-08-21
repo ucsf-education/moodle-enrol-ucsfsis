@@ -25,8 +25,9 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once("$CFG->libdir/formslib.php");
-require_once("lib.php");
+require_once $CFG->libdir . '/formslib.php';
+require_once 'lib.php';
+require_once 'locallib.php';
 
 class enrol_ucsfsis_edit_form extends moodleform {
 
@@ -38,7 +39,7 @@ class enrol_ucsfsis_edit_form extends moodleform {
     public function definition() {
         global $PAGE, $OUTPUT;
 
-        $mform  = $this->_form;
+        $mform = $this->_form;
 
         /**
          * @var \stdClass $instance
@@ -58,29 +59,26 @@ class enrol_ucsfsis_edit_form extends moodleform {
             = $selected_course
             = '';
 
-        // Load Term options
         $terms = array();
+        // Load Term options
+        $rawTerms = array();
         if (!$sisisdown) {
-            $terms = $http->get_active_terms();
+            $rawTerms = $http->get_active_terms();
         }
-
-        if (empty($terms)) {
+        if (empty($rawTerms)) {
             $sisisdown = true;
             $termoptions = array('' => get_string('choosedots'));
         } else {
-            // Load $termoptions
-            foreach($terms as $term) {
-                // Skip if enrollmentStartTime is in the future.
-                $enrollmentStartTime = strtotime($term->fileDateForEnrollment->enrollmentStart);
-                if ( time() < $enrollmentStartTime ) {
-                    $termoptions[$term->id] = $term->id . ": ". $term->name
-                                                  . get_string('enrolmentstartson', 'enrol_ucsfsis',  date("M j, Y", $enrollmentStartTime));
-                } else {
+            foreach($rawTerms as $rawTerm) {
+                $time = time();
+                $cleanTerm = enrol_ucsfsis_simplify_sis_term($rawTerm, $time);
+                $terms[] = $cleanTerm;
+                if ($cleanTerm->hasStarted) {
                     if (empty($selected_term)) {
-                        $selected_term = $term->id;
+                        $selected_term = $cleanTerm->id;
                     }
-                    $termoptions[$term->id] = $term->id . ": ". $term->name;
                 }
+                $termoptions[$cleanTerm->id] = $cleanTerm->title;
             }
 
             if ($instance->id) {
@@ -121,31 +119,28 @@ class enrol_ucsfsis_edit_form extends moodleform {
         $courseoptions = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
 
         if (!$sisisdown) {
-            $subjects = $http->get_subjects_in_term($selected_term);
-            if (!empty($subjects)) {
-                foreach ($subjects as $subject) {
-                    $subjectoptions[$subject->id] = $subject->code . ": " . $subject->name . " (" . $subject->id . ")";
+            $rawSubjects = $http->get_subjects_in_term($selected_term);
+            if (!empty($rawSubjects)) {
+                foreach ($rawSubjects as $rawSubject) {
+                    $cleanSubject = enrol_ucsfsis_simplify_sis_subject($rawSubject);
+                    $subjects[] = $cleanSubject;
+                    $subjectoptions[$cleanSubject->id] = $cleanSubject->title;
                 }
             }
 
-            $courses = $http->get_courses_in_term($selected_term);
-            if (!empty($courses) && $selected_subject) {
-                foreach ($courses as $course) {
-                    if ($selected_subject !== $course->subjectForCorrespondTo) {
-                        continue;
-                    }
+            $rawCourses = $http->get_courses_in_term($selected_term);
+            if (!empty($rawCourses)) {
+                foreach ($rawCourses as $rawCourse) {
+                    $cleanCourse = enrol_ucsfsis_simplify_sis_course($rawCourse);
+                    $courses[] = $cleanCourse;
 
-                    if (empty($selected_course)) {
-                        $selected_course = $course->id;
-                    }
+                    if ($selected_subject === $cleanCourse->subjectId) {
+                        if (empty($selected_course)) {
+                            $selected_course = $cleanCourse->id;
+                        }
 
-                    $instructorname = '';
-                    if (!empty($course->userForInstructorOfRecord)) {
-                        $instr = $course->userForInstructorOfRecord;
-                        $instructorname = " ($instr->firstName $instr->lastName)";
+                        $courseoptions[" " . $cleanCourse->id] = $cleanCourse->title;
                     }
-                    $courseoptions[" " . $course->id]
-                        = $course->courseNumber . ": " . $course->name . $instructorname;
                 }
             }
         }
@@ -156,6 +151,7 @@ class enrol_ucsfsis_edit_form extends moodleform {
             'enrol_ucsfsis/edit_form',
             'init',
             array(
+                $course->id,
                 $term_ids,
                 $selected_term,
                 $subjects,

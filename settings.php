@@ -27,6 +27,8 @@ require_once(__DIR__.'/lib.php');
 
 defined('MOODLE_INTERNAL') || die();
 
+use enrol_ucsfsis\ucsfsis_oauth_client;
+
 if ($ADMIN->fulltree) {
 
     //--- general settings -----------------------------------------------------------------------------------
