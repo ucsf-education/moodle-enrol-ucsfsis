@@ -191,6 +191,8 @@ class enrol_ucsfsis_edit_form extends moodleform {
         );
         $mform->addHelpButton('selectcourse', 'course', 'enrol_ucsfsis');
         $element->setValue(" " . $selected_course);
+        $mform->addRule('selectcourse', null, 'required', null, 'client');
+        $mform->addRule('selectcourse', null, 'required', null, 'server');
 
         if ($instance->id) {
             $roles = get_default_enrol_roles($context, $instance->roleid);
