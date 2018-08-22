@@ -4,104 +4,120 @@
  * @package enrol_ucsfsis
  * @module enrol_ucsfsis/edit_form
  */
-define(['jquery', 'core/ajax', 'core/notification', 'core/str' ], function($, Ajax, Notification, Str ) {
+define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notification) {
 
   return {
+    cache: {
+      courses: {},
+      subjects: {}
+    },
     courseId: null,
-    courses: {},
-    subjects: {},
-    termIds: [],
-    selectedTermId: null,
-    selectedSubjectId: null,
-    selectedCourseId:null,
+    termId: null,
     coursesDefaultOptionText: '',
     subjectsDefaultOptionText: '',
 
+    $termSelect: null,
+    $subjectSelect: null,
+    $courseSelect: null,
+
     init: function(
       courseId,
-      termIds,
-      selectedTermId,
+      termId,
       subjects,
-      selectedSubjectId,
       courses,
-      selectedCourseId,
       subjectDefaultOptionsText,
       coursesDefaultOptionText
     ) {
-      var course, i, n;
-
+      this.$termSelect = $('#id_selectterm');
+      this.$subjectSelect = $('#id_selectsubject');
+      this.$courseSelect = $('#id_selectcourse');
       this.courseId = courseId;
-      this.selectedTermId = selectedTermId;
-      this.selectedSubjectId = selectedSubjectId;
-      this.selectedCourseId = selectedCourseId;
+      this.termId = termId;
       this.subjectsDefaultOptionText = subjectDefaultOptionsText;
       this.coursesDefaultOptionText = coursesDefaultOptionText;
 
-      this.subjects[selectedTermId] = subjects;
-      this.courses[selectedTermId] = {};
+      this.cacheSubjectsAndCourses(this.termId, subjects, courses);
 
-      for(i = 0, n = courses.length; i < n; i++) {
-        course = courses[i];
-        if (! this.courses[selectedTermId].hasOwnProperty(course.subjectId)) {
-          this.courses[selectedTermId][course.subjectId] = [];
-        }
-        this.courses[selectedTermId][course.subjectId].push(course);
-      }
-
-      $('#id_selectterm').change($.proxy(this, 'changeTerm'));
-      $('#id_selectsubject').change($.proxy(this, 'changeSubject'));
+      this.$termSelect.change($.proxy(this, 'changeTerm'));
+      this.$subjectSelect.change($.proxy(this, 'changeSubject'));
       this.enableForm();
     },
 
     changeSubject: function(event) {
       var subjectId = $(event.target).find(":selected").val();
-      var courseSelect = $('#id_selectcourse');
-      var courses = this.courses[this.selectedTermId][subjectId];
-      courseSelect.children().remove().end();
-      courseSelect.append($('<option>', {
-        value: '',
-        text: this.coursesDefaultOptionText
-      }));
-      $.each(courses, function(i, course) {
-        courseSelect.append($('<option>', {
-          value: course.id,
-          text: course.title,
-        }));
-      });
+      var courses = this.cache.courses[this.termId][subjectId];
+      this.repopulateSelect(this.$courseSelect, courses, this.coursesDefaultOptionText);
     },
 
     changeTerm: function(event) {
-      var termId = $(event.target).find(":selected").val();
       this.disableForm();
-      Ajax.call([{
-        methodname: 'enrol_ucsfsis_get_subjects_and_courses_by_term',
-        args: {courseid: this.courseId, termid: termId},
-        done: this.processResponse.bind(this),
-        fail: Notification.exception
-      }]);
+      var termId = $(event.target).find(":selected").val();
+      this.termId = termId;
+      if (this.cache.subjects.hasOwnProperty(this.termId)) {
+        this.repopulateSelect(this.$subjectSelect, this.cache.subjects[this.termId], this.subjectsDefaultOptionText);
+        this.repopulateSelect(this.$courseSelect, [], this.coursesDefaultOptionText);
+        this.enableForm();
+      } else {
+        Ajax.call([{
+          methodname: 'enrol_ucsfsis_get_subjects_and_courses_by_term',
+          args: {courseid: this.courseId, termid: termId},
+          done: this.processResponse.bind(this, termId),
+          fail: Notification.exception
+        }]);
+      }
     },
 
-    processResponse: function(response) {
-      console.log(response);
+    processResponse: function(termId, data) {
+      this.cacheSubjectsAndCourses(termId, data.subjects, data.courses);
+      this.repopulateSelect(this.$subjectSelect, data.subjects, this.subjectsDefaultOptionText);
+      this.repopulateSelect(this.$courseSelect, [], this.coursesDefaultOptionText);
       this.enableForm();
     },
 
     enableForm: function(){
-      $('#id_selectstatus').prop('disabled', false);
-      $('#id_selectterm').prop('disabled', false);
-      $('#id_selectcourse').prop('disabled', false);
-      $('#id_selectsubject').prop('disabled', false);
+      $('#id_status').prop('disabled', false);
+      this.$termSelect.prop('disabled', false);
+      this.$subjectSelect.prop('disabled', false);
+      this.$courseSelect.prop('disabled', false);
       $('#id_roleid').prop('disabled', false);
       $('#id_submitbutton').prop('disabled', false);
     },
 
     disableForm: function(){
-      $('#id_selectstatus').prop('disabled', true);
-      $('#id_selectterm').prop('disabled', true);
-      $('#id_selectcourse').prop('disabled', true);
-      $('#id_selectsubject').prop('disabled', true);
+      $('#id_status').prop('disabled', true);
+      this.$termSelect.prop('disabled', true);
+      this.$subjectSelect.prop('disabled', true);
+      this.$courseSelect.prop('disabled', true);
       $('#id_roleid').prop('disabled', true);
       $('#id_submitbutton').prop('disabled', true);
+    },
+
+    repopulateSelect: function($select, options, defaultOptionTitle) {
+      $select.children().remove().end();
+      $select.append($('<option>', {
+        value: '',
+        text: defaultOptionTitle
+      }));
+      $.each(options, function(i, option) {
+        $select.append($('<option>', {
+          value: option.id,
+          text: option.title,
+        }));
+      });
+    },
+
+    cacheSubjectsAndCourses: function(termId, subjects, courses) {
+      var course, i, n;
+      this.cache.subjects[termId] = subjects;
+      this.cache.courses[termId] = {};
+
+      for(i = 0, n = courses.length; i < n; i++) {
+        course = courses[i];
+        if (! this.cache.courses[termId].hasOwnProperty(course.subjectId)) {
+          this.cache.courses[termId][course.subjectId] = [];
+        }
+        this.cache.courses[termId][course.subjectId].push(course);
+      }
     }
   }
 });
