@@ -116,7 +116,7 @@ class enrol_ucsfsis_edit_form extends moodleform {
             $mform->hardFreeze('status', $instance->status);
 
         // Add Term Select box
-        $mform->addElement(
+        $element = $mform->addElement(
             'select',
             'selectterm',
             get_string('term', 'enrol_ucsfsis'),
@@ -124,6 +124,7 @@ class enrol_ucsfsis_edit_form extends moodleform {
             array('disabled' => 'disabled')
         );
         $mform->addHelpButton('selectterm', 'term', 'enrol_ucsfsis');
+        $element->setValue($selected_term);
 
         $subjects = array();
         $courses = array();
