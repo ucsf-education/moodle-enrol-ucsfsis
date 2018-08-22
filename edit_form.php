@@ -104,13 +104,25 @@ class enrol_ucsfsis_edit_form extends moodleform {
             ENROL_INSTANCE_ENABLED  => get_string('yes'),
             ENROL_INSTANCE_DISABLED => get_string('no'),
         );
-        $mform->addElement('select', 'status', get_string('status', 'enrol_ucsfsis'), $options);
+        $mform->addElement(
+            'select',
+            'status',
+            get_string('status', 'enrol_ucsfsis'),
+            $options,
+            array('disabled' => 'disabled')
+        );
         $mform->addHelpButton('status', 'status', 'enrol_ucsfsis');
         if ($sisisdown)
             $mform->hardFreeze('status', $instance->status);
 
         // Add Term Select box
-        $mform->addElement('select', 'selectterm', get_string('term', 'enrol_ucsfsis'), $termoptions);
+        $mform->addElement(
+            'select',
+            'selectterm',
+            get_string('term', 'enrol_ucsfsis'),
+            $termoptions,
+            array('disabled' => 'disabled')
+        );
         $mform->addHelpButton('selectterm', 'term', 'enrol_ucsfsis');
 
         $subjects = array();
@@ -163,11 +175,23 @@ class enrol_ucsfsis_edit_form extends moodleform {
             )
         );
 
-        $element = $mform->addElement('select', 'selectsubject', get_string('subject', 'enrol_ucsfsis'), $subjectoptions);
+        $element = $mform->addElement(
+            'select',
+            'selectsubject',
+            get_string('subject', 'enrol_ucsfsis'),
+            $subjectoptions,
+            array('disabled' => 'disabled')
+        );
         $mform->addHelpButton('selectsubject', 'subject', 'enrol_ucsfsis');
         $element->setValue($selected_subject);
 
-        $element = $mform->addElement('select', 'selectcourse', get_string('course', 'enrol_ucsfsis'), $courseoptions);
+        $element = $mform->addElement(
+            'select',
+            'selectcourse',
+            get_string('course', 'enrol_ucsfsis'),
+            $courseoptions,
+            array('disabled' => 'disabled')
+        );
         $mform->addHelpButton('selectcourse', 'course', 'enrol_ucsfsis');
         $element->setValue(" " . $selected_course);
 
@@ -176,7 +200,13 @@ class enrol_ucsfsis_edit_form extends moodleform {
         } else {
             $roles = get_default_enrol_roles($context, $enrol->get_config('default_student_roleid'));
         }
-        $mform->addElement('select', 'roleid', get_string('assignrole', 'role'), $roles);
+        $mform->addElement(
+            'select',
+            'roleid',
+            get_string('assignrole', 'role'),
+            $roles,
+            array('disabled' => 'disabled')
+        );
         $mform->setDefault('roleid', $enrol->get_config('default_student_roleid'));
 
         $mform->addElement('hidden', 'courseid', null);

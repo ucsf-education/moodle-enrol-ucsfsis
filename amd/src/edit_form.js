@@ -50,6 +50,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str' ], function($, Aj
 
       $('#id_selectterm').change($.proxy(this, 'changeTerm'));
       $('#id_selectsubject').change($.proxy(this, 'changeSubject'));
+      this.enableForm();
     },
 
     changeSubject: function(event) {
@@ -71,6 +72,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str' ], function($, Aj
 
     changeTerm: function(event) {
       var termId = $(event.target).find(":selected").val();
+      this.disableForm();
       Ajax.call([{
         methodname: 'enrol_ucsfsis_get_subjects_and_courses_by_term',
         args: {courseid: this.courseId, termid: termId},
@@ -81,6 +83,25 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/str' ], function($, Aj
 
     processResponse: function(response) {
       console.log(response);
+      this.enableForm();
+    },
+
+    enableForm: function(){
+      $('#id_selectstatus').prop('disabled', false);
+      $('#id_selectterm').prop('disabled', false);
+      $('#id_selectcourse').prop('disabled', false);
+      $('#id_selectsubject').prop('disabled', false);
+      $('#id_roleid').prop('disabled', false);
+      $('#id_submitbutton').prop('disabled', false);
+    },
+
+    disableForm: function(){
+      $('#id_selectstatus').prop('disabled', true);
+      $('#id_selectterm').prop('disabled', true);
+      $('#id_selectcourse').prop('disabled', true);
+      $('#id_selectsubject').prop('disabled', true);
+      $('#id_roleid').prop('disabled', true);
+      $('#id_submitbutton').prop('disabled', true);
     }
   }
 });
