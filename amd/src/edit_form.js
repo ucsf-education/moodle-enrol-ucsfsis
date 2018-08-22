@@ -119,5 +119,5 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
         this.cache.courses[termId][course.subjectId].push(course);
       }
     }
-  }
+  };
 });
