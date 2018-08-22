@@ -164,12 +164,9 @@ class enrol_ucsfsis_edit_form extends moodleform {
             'init',
             array(
                 $course->id,
-                $term_ids,
                 $selected_term,
                 $subjects,
-                $selected_subject,
                 $courses,
-                $selected_course,
                 get_string('choosesubjectdots', 'enrol_ucsfsis'),
                 get_string('choosecoursedots', 'enrol_ucsfsis'),
             )
