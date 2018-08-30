@@ -1,4 +1,4 @@
-# moodle-enrol-ilios
+# moodle-enrol-ucsfsis
 A Moodle Enrollment plugin for UCSF's Student Information Systems (SIS).
 
 # Installation
