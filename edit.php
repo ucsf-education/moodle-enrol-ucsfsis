@@ -97,14 +97,14 @@ if ($mform->is_cancelled()) {
      * Moodle won't let us get values of form elements that weren't in the original form definition.
      * Since we're loading courses into the corresponding dropdown via XHR callbacks, the form submission handler may
      * disregards them.
-     * So we have to dig deeper and check the raw submitted values.
+     * So we have to dig deeper and check the raw, submitted values.
      * [ST 2018/08/21]
      */
     $selectcourse = null;
     if (object_property_exists($data, 'selectcourse')) {
         $selectcourse = $data->selectcourse;
     } else {
-        $selectcourse = (int) $mform->getForm()->getSubmitValue('selectcourse');
+        $selectcourse = (int) $mform->getSubmitValue('selectcourse');
     }
 
     if ($instance->id) {

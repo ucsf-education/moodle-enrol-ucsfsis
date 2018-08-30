@@ -226,13 +226,15 @@ class enrol_ucsfsis_edit_form extends moodleform {
 
     /**
      * HAAAAACKS!
-     * We need to expose the internal form in order to do some form submission processing further downstream
-     * on user-provided data that we won't have access to otherwise.
+     * We need to retrieve the raw, user-submitted data from the internal QuickForm object
+     * for form-submission processing further downstream.
      * [ST 2018/08/21]
-     * @return MoodleQuickForm
+     * @param string $elementName
+     * @return mixed
+     * @see QuickForm::getSubmitValue
      */
-    public function getForm()
+    public function getSubmitValue($elementName)
     {
-        return $this->_form;
+        return $this->_form->getSubmitValue($elementName);
     }
 }
