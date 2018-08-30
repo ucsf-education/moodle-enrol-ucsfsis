@@ -50,13 +50,19 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
     },
 
     changeTerm: function(event) {
-      this.disableForm();
       var termId = $(event.target).find(":selected").val();
+      var that = this;
+
+      this.disableForm();
+
       this.termId = termId;
+
       if (this.cache.subjects.hasOwnProperty(this.termId)) {
-        this.repopulateSelect(this.$subjectSelect, this.cache.subjects[this.termId], this.subjectsDefaultOptionText);
-        this.repopulateSelect(this.$courseSelect, [], this.coursesDefaultOptionText);
-        this.enableForm();
+        setTimeout(function(){
+          that.repopulateSelect(that.$subjectSelect, that.cache.subjects[that.termId], that.subjectsDefaultOptionText);
+          that.repopulateSelect(that.$courseSelect, [], that.coursesDefaultOptionText);
+          that.enableForm();
+        }, 500);
       } else {
         Ajax.call([{
           methodname: 'enrol_ucsfsis_get_subjects_and_courses_by_term',
