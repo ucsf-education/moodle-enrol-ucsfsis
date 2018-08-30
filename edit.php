@@ -104,7 +104,6 @@ if ($mform->is_cancelled()) {
     if (object_property_exists($data, 'selectcourse')) {
         $selectcourse = $data->selectcourse;
     } else {
-        /** @var \stdClass $submittedData */
         $selectcourse = (int) $mform->getForm()->getSubmitValue('selectcourse');
     }
 
