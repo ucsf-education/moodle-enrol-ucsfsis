@@ -92,10 +92,24 @@ if ($mform->is_cancelled()) {
 } else if ($data = $mform->get_data()) {
     // We are here only because the form is submitted.
 
-    // TODO: Might need to check selectsubjectcourse[1] isset.
+    /**
+     * KLUDGE!
+     * Moodle won't let us get values of form elements that weren't in the original form definition.
+     * Since we're loading courses into the corresponding dropdown via XHR callbacks, the form submission handler may
+     * disregards them.
+     * So we have to dig deeper and check the raw, submitted values.
+     * [ST 2018/08/21]
+     */
+    $selectcourse = null;
+    if (object_property_exists($data, 'selectcourse')) {
+        $selectcourse = $data->selectcourse;
+    } else {
+        $selectcourse = (int) $mform->getSubmitValue('selectcourse');
+    }
+
     if ($instance->id) {
         $instance->roleid          = $data->roleid;
-        $instance->customint1      = trim($data->selectsubjectcourse[1]);
+        $instance->customint1      = $selectcourse;
         // Clear SIS course id if exists
         $instance->customchar1     = '';
         $instance->customtext1     = '';  // get the descriptive course name here.
@@ -113,7 +127,7 @@ if ($mform->is_cancelled()) {
     } else {
         $fields = array(
             'status'          => $data->status,
-            'customint1'      => trim($data->selectsubjectcourse[1]),
+            'customint1'      => $selectcourse,
             'roleid'          => $data->roleid);
         $enrol->add_instance($course, $fields);
     }

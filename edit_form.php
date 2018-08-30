@@ -25,75 +25,71 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once("$CFG->libdir/formslib.php");
-require_once("lib.php");
+require_once $CFG->libdir . '/formslib.php';
+require_once 'lib.php';
+require_once 'locallib.php';
 
 class enrol_ucsfsis_edit_form extends moodleform {
 
-    // @TODO Cache the api calls.  If it's in the cache, don't bother to make the call again.
-    // @TODO Update Course list in definition_after_data()
+    /**
+     * @inheritdoc
+     * @throws coding_exception
+     * @throws moodle_exception
+     */
+    public function definition() {
+        global $PAGE, $OUTPUT;
 
-    function definition() {
-        global $CFG, $DB, $PAGE, $OUTPUT;
+        $mform = $this->_form;
 
-        $mform  = $this->_form;
+        /**
+         * @var \stdClass $instance
+         * @var enrol_ucsfsis_plugin $enrol
+         * @var \stdClass $course
+         */
         list($instance, $enrol, $course) = $this->_customdata;
         $context = context_course::instance($course->id);
 
-        // TODO: Improve AJAX calls, instead of just simulate a click button.
-        // $PAGE->requires->yui_module( 'moodle-enrol_ucsfsis-groupchoosers',
-        //                              'M.enrol_ucsfsis.init_groupchoosers',
-        //                              array(array('formid' => $mform->getAttribute('id'),
-        //                                          'courseid' => $course->id)) );
-        $PAGE->requires->js_init_call('M.enrol_ucsfsis.init',
-                                      array(array('formid' => $mform->getAttribute('id'),
-                                                  'courseid' => $course->id)));
-
+        /** @var \enrol_ucsfsis\ucsfsis_oauth_client $http */
         $http  = $enrol->get_http_client();
+
         $sisisdown = !$http->is_logged_in();
 
-        // Load Term options
-        if (!$sisisdown) {
-            $terms = $http->get_active_terms();
-        } else {
-            $terms = null;
-        }
-        $selected_term = $selected_subject = $selected_course = '';
+        $selected_term
+            = $selected_subject
+            = $selected_course
+            = '';
 
-        // Can I refactor this part?
-            if (empty($terms)) {
-                $sisisdown = true;
-                $termoptions = array('' => get_string('choosedots'));
-                $subjectoptions = array('' => get_string('choosesubjectdots', 'enrol_ucsfsis'));
-                $subjectcourseoptions[''] = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
-            } else {
-                // Load $termoptions
-                // $termoptions = array('' => get_string('choosedots'));
-                foreach($terms as $term) {
-                    // Skip if enrollmentStartTime is in the future.
-                    $enrollmentStartTime = strtotime($term->fileDateForEnrollment->enrollmentStart);
-                    if ( time() < $enrollmentStartTime ) {
-                        $termoptions[trim($term->id)] = trim($term->id) . ": ". trim($term->name)
-                                                      . get_string('enrolmentstartson', 'enrol_ucsfsis',  date("M j, Y", $enrollmentStartTime));
-                    } else {
-                        if (empty($selected_term)) {
-                            $selected_term = trim($term->id);
-                        }
-                        // DEBUG: Show termStartDate to make sure it is in descending order
-                        // $termoptions[trim($term->id)] = trim($term->id) . ": ". trim($term->name). " (".$term->termStartDate." to ".$term->termEndDate.")";
-                        $termoptions[trim($term->id)] = trim($term->id) . ": ". trim($term->name);
+        $terms = array();
+        // Load Term options
+        $rawTerms = array();
+        if (!$sisisdown) {
+            $rawTerms = $http->get_active_terms();
+        }
+        if (empty($rawTerms)) {
+            $sisisdown = true;
+            $termoptions = array('' => get_string('choosedots'));
+        } else {
+            foreach($rawTerms as $rawTerm) {
+                $time = time();
+                $cleanTerm = enrol_ucsfsis_simplify_sis_term($rawTerm, $time);
+                $terms[] = $cleanTerm;
+                if ($cleanTerm->hasStarted) {
+                    if (empty($selected_term)) {
+                        $selected_term = $cleanTerm->id;
                     }
                 }
-
-                if ($instance->id) {
-                    $siscourseid = $instance->customint1;
-                    $siscourse = $http->get_course($siscourseid);
-                    $selected_term = trim($siscourse->term);
-                    $selected_subject = trim($siscourse->subjectForCorrespondTo);
-                    $selected_course = $siscourseid;
-                }
-                $selected_term = isset($instance->submitted_termid) ?  $instance->submitted_termid : $selected_term;
+                $termoptions[$cleanTerm->id] = $cleanTerm->title;
             }
+
+            if ($instance->id) {
+                $siscourseid = $instance->customint1;
+                $siscourse = $http->get_course($siscourseid);
+                $selected_term = $siscourse->term;
+                $selected_subject = $siscourse->subjectForCorrespondTo;
+                $selected_course = $siscourseid;
+            }
+            $selected_term = isset($instance->submitted_termid) ?  $instance->submitted_termid : $selected_term;
+        }
 
         // Display error message (setConstant and hardFreeze fields)
         if ($sisisdown) {
@@ -103,76 +99,124 @@ class enrol_ucsfsis_edit_form extends moodleform {
         // Add header text
         $mform->addElement('header','general', get_string('pluginname_short', 'enrol_ucsfsis'));
 
-        // Display notice if this enrolment is converted from CLEAE
-        if (isset($instance->customchar1) && !empty($instance->customchar1)) {
-            $mform->addElement('html', $OUTPUT->notification(get_string('convertedfrom', 'enrol_ucsfsis', $instance->customchar1), 'notifysuccess'));
+        // Add 'Enable' Select box
+        $options = array(
+            ENROL_INSTANCE_ENABLED  => get_string('yes'),
+            ENROL_INSTANCE_DISABLED => get_string('no'),
+        );
+        $mform->addElement(
+            'select',
+            'status',
+            get_string('status', 'enrol_ucsfsis'),
+            $options,
+            array('disabled' => 'disabled')
+        );
+        $mform->addHelpButton('status', 'status', 'enrol_ucsfsis');
+        $mform->addRule('status', null, 'required', null, 'client');
+
+        if ($sisisdown) {
+            $mform->hardFreeze('status', $instance->status);
         }
 
-        // Add 'Enable' Select box
-        $options = array(ENROL_INSTANCE_ENABLED  => get_string('yes'),
-                         ENROL_INSTANCE_DISABLED => get_string('no'));
-        $mform->addElement('select', 'status', get_string('status', 'enrol_ucsfsis'), $options);
-        $mform->addHelpButton('status', 'status', 'enrol_ucsfsis');
-        if ($sisisdown)
-            $mform->hardFreeze('status', $instance->status);
-
         // Add Term Select box
-        $element = &$mform->addElement('select', 'selectterm', get_string('term', 'enrol_ucsfsis'), $termoptions);
+        $element = $mform->addElement(
+            'select',
+            'selectterm',
+            get_string('term', 'enrol_ucsfsis'),
+            $termoptions,
+            array('disabled' => 'disabled')
+        );
         $mform->addHelpButton('selectterm', 'term', 'enrol_ucsfsis');
-        $mform->registerNoSubmitButton('submitterm');
-        $mform->addElement('submit', 'submitterm', get_string('termoptionsupdate', 'enrol_ucsfsis'));
         $element->setValue($selected_term);
+        $mform->addRule('selectterm', null, 'required', null, 'client');
 
-        // Can I refractor this part?
 
-            // Populate subjectoptions
-            if (!$sisisdown) {
-                $subjects = $http->get_subjects_in_term( $selected_term );
-                $subjectoptions = array('' => get_string('choosesubjectdots', 'enrol_ucsfsis'));
-                $subjectcourseoptions[''] = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
-                if (!empty($subjects)) {
-                    foreach ($subjects as $subject) {
-                        $subjectoptions[trim($subject->id)] = trim($subject->code) . ": " . $subject->name . " (" . $subject->id . ")";
-                        $subjectcourseoptions[trim($subject->id)] = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
-                    }
+        $subjects = array();
+        $courses = array();
+        $subjectoptions = array('' => get_string('choosesubjectdots', 'enrol_ucsfsis'));
+        $courseoptions = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
+
+        if (!$sisisdown) {
+            $rawSubjects = $http->get_subjects_in_term($selected_term);
+            if (!empty($rawSubjects)) {
+                foreach ($rawSubjects as $rawSubject) {
+                    $cleanSubject = enrol_ucsfsis_simplify_sis_subject($rawSubject);
+                    $subjects[] = $cleanSubject;
+                    $subjectoptions[$cleanSubject->id] = $cleanSubject->title;
                 }
             }
-            // Populate subjectcourseoptions
-            if (!$sisisdown) {
-                $courses = $http->get_courses_in_term($selected_term);
-                if (!empty($courses)) {
-                    foreach ($courses as $course) {
+
+            $rawCourses = $http->get_courses_in_term($selected_term);
+            if (!empty($rawCourses)) {
+                foreach ($rawCourses as $rawCourse) {
+                    $cleanCourse = enrol_ucsfsis_simplify_sis_course($rawCourse);
+                    $courses[] = $cleanCourse;
+
+                    if ($selected_subject === $cleanCourse->subjectId) {
                         if (empty($selected_course)) {
-                            $selected_course = trim($course->id);
+                            $selected_course = $cleanCourse->id;
                         }
-                        $instructorname = '';
-                        if (!empty($course->userForInstructorOfRecord)) {
-                            $instr = $course->userForInstructorOfRecord;
-                            $instructorname = " ($instr->firstName $instr->lastName)";
-                        }
-                        // $subjectcourseoptions[trim($course->subjectForCorrespondTo)]['"'.trim($course->id).'"']
-                        // Course index needs to be a string (by prefixing with a space); otherwise, it will be sorted as Int.
-                        $subjectcourseoptions[trim($course->subjectForCorrespondTo)][" ".trim($course->id)]
-                                                                                        // = trim($course->courseNumber) . ": " . $course->name . " (" . $course->id .")";
-                                                                                        = trim($course->courseNumber) . ": " . $course->name . $instructorname;
+
+                        $courseoptions[" " . $cleanCourse->id] = $cleanCourse->title;
                     }
                 }
             }
+        }
+
+        // initialize the client-side form handler with the data we've loaded so far.
+        $term_ids = array_column($terms, 'id');
+        $PAGE->requires->js_call_amd(
+            'enrol_ucsfsis/edit_form',
+            'init',
+            array(
+                $course->id,
+                $selected_term,
+                $subjects,
+                $courses,
+                get_string('choosesubjectdots', 'enrol_ucsfsis'),
+                get_string('choosecoursedots', 'enrol_ucsfsis'),
+            )
+        );
+
+        $element = $mform->addElement(
+            'select',
+            'selectsubject',
+            get_string('subject', 'enrol_ucsfsis'),
+            $subjectoptions,
+            array('disabled' => 'disabled')
+        );
+        $mform->addHelpButton('selectsubject', 'subject', 'enrol_ucsfsis');
+        $element->setValue($selected_subject);
+        $mform->addRule('selectsubject', null, 'required', null, 'client');
 
 
-        $element = &$mform->addElement('hierselect', 'selectsubjectcourse', get_string('subject_course', 'enrol_ucsfsis'), '', '<br />');
-        $element->setOptions(array($subjectoptions, $subjectcourseoptions));
-        $mform->addGroupRule('selectsubjectcourse', get_string('required'), 'required', null, 'client');
-        $mform->addHelpButton('selectsubjectcourse', 'subject_course', 'enrol_ucsfsis');
-        $element->setValue(array($selected_subject, " ".$selected_course));
+        $element = $mform->addElement(
+            'select',
+            'selectcourse',
+            get_string('course', 'enrol_ucsfsis'),
+            $courseoptions,
+            array('disabled' => 'disabled')
+        );
+        $mform->addHelpButton('selectcourse', 'course', 'enrol_ucsfsis');
+        $element->setValue(" " . $selected_course);
+        $mform->addRule('selectcourse', null, 'required', null, 'client');
+        $mform->addRule('selectcourse', null, 'required', null, 'server');
 
         if ($instance->id) {
             $roles = get_default_enrol_roles($context, $instance->roleid);
         } else {
             $roles = get_default_enrol_roles($context, $enrol->get_config('default_student_roleid'));
         }
-        $mform->addElement('select', 'roleid', get_string('assignrole', 'role'), $roles);
+        $mform->addElement(
+            'select',
+            'roleid',
+            get_string('assignrole', 'role'),
+            $roles,
+            array('disabled' => 'disabled')
+        );
         $mform->setDefault('roleid', $enrol->get_config('default_student_roleid'));
+        $mform->addRule('roleid', null, 'required', null, 'client');
+
 
         $mform->addElement('hidden', 'courseid', null);
         $mform->setType('courseid', PARAM_INT);
@@ -189,11 +233,17 @@ class enrol_ucsfsis_edit_form extends moodleform {
         $this->set_data($instance);
     }
 
-    function validation($data, $files) {
-        global $DB;
-
-        $errors = parent::validation($data, $files);
-
-        return $errors;
+    /**
+     * HAAAAACKS!
+     * We need to retrieve the raw, user-submitted data from the internal QuickForm object
+     * for form-submission processing further downstream.
+     * [ST 2018/08/21]
+     * @param string $elementName
+     * @return mixed
+     * @see QuickForm::getSubmitValue
+     */
+    public function getSubmitValue($elementName)
+    {
+        return $this->_form->getSubmitValue($elementName);
     }
 }
