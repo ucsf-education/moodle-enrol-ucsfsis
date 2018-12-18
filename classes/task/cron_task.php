@@ -101,9 +101,16 @@ class cron_task extends \core\task\scheduled_task {
         $trace = new \text_progress_trace();
 
         foreach ($courses as $course) {
-            $enrol->sync($trace, $course->courseid);
-            $numupdated++;
-            $enrol->set_config('last_sync_course_index', $startindex + $numupdated);
+
+            $syncerror = $enrol->sync($trace, $course->courseid);
+
+            if (empty($syncerror)) {
+                $numupdated++;
+                $enrol->set_config('last_sync_course_index', $startindex + $numupdated);
+            } else {
+                // break if there's an error
+                break;
+            }
         }
 
         if ($startindex + $numupdated >= $total) {

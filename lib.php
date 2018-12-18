@@ -155,6 +155,9 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
      * @return int exit code, 0 means ok, 1 means error, 2 means plugin disabled
      * @throws coding_exception
      * @throws moodle_exception
+     *
+     * @TODO Remove return code and only throw exceptions on error instead.
+     *
      */
     public function sync(progress_trace $trace, $courseid = null) {
         global $CFG, $DB;
@@ -197,7 +200,14 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
 
             if ($courseEnrolments === false) {
                 $trace->output("Unable to fetch data from SIS for course id: $siscourseid.", 1);
-                continue;
+                if (empty($courseid)) {
+                    // Continue if this is not the only course we are sync'ing
+                    continue;
+                }
+                else
+                {
+                    return 1;
+                }
             }
 
             if (empty($courseEnrolments)) {
