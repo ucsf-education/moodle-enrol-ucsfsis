@@ -109,6 +109,9 @@ class cron_task extends \core\task\scheduled_task {
                 $enrol->set_config('last_sync_course_index', $startindex + $numupdated);
             } else {
                 // break if there's an error
+                // and skip this course on the next run (it could be that this course has no enrollment yet.)
+                $numupdated++;
+                $enrol->set_config('last_sync_course_index', $startindex + $numupdated);
                 break;
             }
         }
