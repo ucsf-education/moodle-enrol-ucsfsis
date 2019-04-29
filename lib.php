@@ -334,7 +334,7 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
         parent::update_status($instance, $newstatus);
 
         $trace = new null_progress_trace();
-        $this->sync($trace);
+        $this->sync($trace, $instance->courseid);
         $trace->finished();
     }
 
