@@ -61,6 +61,8 @@ $string['flatfile:manage'] = 'Manage user enrolments manually';
 $string['flatfile:unenrol'] = 'Unenrol users from the course manually';
 $string['host_url'] = 'Host URL';
 $string['host_url_desc'] = 'Enter alternate UCSF SIS API server address here, e.g. <em>https://stage-unified-api.ucsf.edu</em>';
+$string['http_get'] = 'GET';
+$string['http_post'] = 'POST';
 $string['instanceexists'] = 'Cohort is already synchronised with selected role';
 $string['location'] = 'File location';
 $string['location_desc'] = 'Specify full path to the enrolment file. The file is automatically deleted after processing.';
@@ -118,6 +120,8 @@ It could look something like this:
 </pre>';
 $string['refreshtoken'] = 'Refresh token';
 $string['refreshtoken_desc'] = 'Refresh token description';
+$string['requestmethod'] = 'HTTP request method';
+$string['requestmethod_desc'] = 'Select the HTTP request method that is supported by the UCSF SIS API server.';
 $string['resourceid'] = 'UCSF resource account ID';
 $string['resourceid_desc'] = 'Enter the UCSF resource account ID to be used to contact the SIS server here.';
 $string['resourcepassword'] = 'UCSF resource account password';

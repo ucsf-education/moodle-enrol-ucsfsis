@@ -258,6 +258,15 @@ class ucsfsis_oauth_client extends oauth2_client
      */
     protected function use_http_get()
     {
+        global $CFG;
+
+        require_once($CFG->libdir.'/moodlelib.php');
+
+        $httpmethod = get_config('enrol_ucsfsis', 'requestmethod');
+
+        if (!empty($httpmethod)) {
+            return ($httpmethod === 0);
+        }
         return true;
     }
 
@@ -282,7 +291,7 @@ class ucsfsis_oauth_client extends oauth2_client
         if ($this->use_http_get()) {
             $response = $this->get($this->token_url(), $params);
         } else {
-            $response = $this->post($this->token_url(), $params);
+            $response = $this->post($this->token_url(), $this->build_post_data($params));
         }
 
         if (!$this->info['http_code'] === 200) {
@@ -341,7 +350,7 @@ class ucsfsis_oauth_client extends oauth2_client
         if ($this->use_http_get()) {
             $response = $this->get($this->token_url(), $params);
         } else {
-            $response = $this->post($this->token_url(), $params);
+            $response = $this->post($this->token_url(), $this->build_post_data($params));
         }
 
         if (!$this->info['http_code'] === 200) {

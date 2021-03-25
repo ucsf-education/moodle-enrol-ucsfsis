@@ -89,6 +89,18 @@ if ($ADMIN->fulltree) {
                 ''
             )
         );
+        $settings->add(
+            new admin_setting_configselect(
+                'enrol_ucsfsis/requestmethod',
+                get_string('requestmethod', 'enrol_ucsfsis'),
+                get_string('requestmethod_desc', 'enrol_ucsfsis'),
+                0,
+                array(
+                    0 => new lang_string('http_get', 'enrol_ucsfsis'),
+                    1 => new lang_string('http_post', 'enrol_ucsfsis')
+                )
+            )
+        );
 
         $settings->add(
             new admin_setting_heading(
