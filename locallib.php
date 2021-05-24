@@ -46,7 +46,7 @@ function enrol_ucsfsis_simplify_sis_term(\stdClass $sisTerm, $time = 0) {
         $simpleTerm->title = $simpleTerm->title
             . get_string('enrolmentstartson', 'enrol_ucsfsis',  date(
                 "M j, Y",
-                $simpleTerm->startTime
+                $startTime
             ));
     }
     return $simpleTerm;
