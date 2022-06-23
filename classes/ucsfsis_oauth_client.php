@@ -629,7 +629,11 @@ class ucsfsis_oauth_client extends oauth2_client
                 $obj = new \stdClass();
                 $obj->ucid = $e->student->empno;
 
-                switch ($e->status) {
+                if ($e->courseCodeForCode1 === 'W' || $e->courseCodeForCode2 === 'W') {
+                    $obj->status = ENROL_USER_SUSPENDED;
+                    $enrol_list[$e->student->empno] = $obj;
+                } else {
+                    switch ($e->status) {
                     case "A":
                         $obj->status = ENROL_USER_ACTIVE;
                         $enrol_list[$e->student->empno] = $obj;
@@ -644,6 +648,7 @@ class ucsfsis_oauth_client extends oauth2_client
                     case "F":
                     default:
                         // do nothing
+                    }
                 }
             }
         }
