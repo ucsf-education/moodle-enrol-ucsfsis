@@ -191,7 +191,7 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
             $siscourseid = $instance->customint1;
             $context = context_course::instance($instance->courseid);
 
-            $trace->output("Synchronizing course {$instance->courseid}...");
+            $trace->output("Synchronizing course {$instance->courseid} (SIS cid = $siscourseid)...");
 
             $courseEnrolments = false;
             if ($http->is_logged_in()) {
@@ -199,7 +199,7 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
             }
 
             if ($courseEnrolments === false) {
-                $trace->output("Unable to fetch data from SIS for course id: $siscourseid.", 1);
+                $trace->output("Unable to fetch data from SIS for course {$instance->courseid} (SIS cid = $siscourseid).", 1);
                 if (empty($courseid)) {
                     // Continue if this is not the only course we are sync'ing
                     continue;
@@ -211,7 +211,7 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
             }
 
             if (empty($courseEnrolments)) {
-                $trace->output("Skipping: No enrolment data from SIS for course id: $siscourseid.", 1);
+                $trace->output("Skipping: No enrolment data from SIS for course {$instance->courseid} (SIS cid = $siscourseid).", 1);
                 continue;
             }
 
