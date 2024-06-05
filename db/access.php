@@ -25,15 +25,15 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$capabilities = array(
+$capabilities = [
 
-    'enrol/ucsfsis:config' => array(
+    'enrol/ucsfsis:config' => [
 
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,
-        'archetypes' => array(
+        'archetypes' => [
             'manager' => CAP_ALLOW,
-        )
-    ),
+        ],
+    ],
 
-);
+];

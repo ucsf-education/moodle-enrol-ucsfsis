@@ -43,7 +43,7 @@ class sis_client_cache extends curl_cache {
         $filename = 'u'.'_'.md5(serialize($param));
         if(file_exists($this->dir.$filename)) {
             $lasttime = filemtime($this->dir.$filename);
-            if (time()-$lasttime > $this->ttl) {
+            if (time() - $lasttime > $this->ttl) {
                 return false;
             } else {
                 $fp = fopen($this->dir.$filename, 'r');

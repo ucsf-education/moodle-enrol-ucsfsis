@@ -44,10 +44,10 @@ class enrol_ucsfsis_external extends external_api {
      */
     public static function get_subjects_and_courses_by_term_parameters() {
         return new external_function_parameters(
-            array(
+            [
                 'courseid' => new external_value(PARAM_INT, 'Course ID', VALUE_REQUIRED),
-                'termid' => new external_value(PARAM_TEXT, 'Term ID', VALUE_REQUIRED)
-            )
+                'termid' => new external_value(PARAM_TEXT, 'Term ID', VALUE_REQUIRED),
+            ]
         );
     }
 
@@ -58,19 +58,19 @@ class enrol_ucsfsis_external extends external_api {
      * @throws dml_exception
      * @throws moodle_exception
      */
-    public static function get_subjects_and_courses_by_term($courseId, $termId) {
+    public static function get_subjects_and_courses_by_term($courseid, $termid) {
         global $DB;
-        $raw = array(
-            'courses' => array(),
-            'subjects' => array(),
-        );
+        $raw = [
+            'courses' => [],
+            'subjects' => [],
+        ];
 
-        $clean = array(
-            'courses' => array(),
-            'subjects' => array(),
-        );
+        $clean = [
+            'courses' => [],
+            'subjects' => [],
+        ];
 
-        $course = $DB->get_record('course', array('id' => $courseId), '*', MUST_EXIST);
+        $course = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
         $context = context_course::instance($course->id, MUST_EXIST);
 
         if ($course->id == SITEID) {
@@ -86,8 +86,8 @@ class enrol_ucsfsis_external extends external_api {
         $http  = $enrol->get_http_client();
 
         if ($http->is_logged_in()) {
-            $raw['courses'] =  $http->get_courses_in_term($termId);
-            $raw['subjects'] =  $http->get_subjects_in_term($termId);
+            $raw['courses'] = $http->get_courses_in_term($termid);
+            $raw['subjects'] = $http->get_subjects_in_term($termid);
 
             foreach($raw['courses'] as $course) {
                 $clean['courses'][] = enrol_ucsfsis_simplify_sis_course($course);
@@ -104,25 +104,25 @@ class enrol_ucsfsis_external extends external_api {
      */
     public static function get_subjects_and_courses_by_term_returns() {
         return new external_function_parameters(
-            array(
+            [
                 'courses' => new external_multiple_structure(
                     new external_single_structure(
-                        array(
+                        [
                             'id' => new external_value(PARAM_TEXT, 'course id'),
                             'title' => new external_value(PARAM_TEXT, 'course title'),
                             'subjectId' => new external_value(PARAM_TEXT, 'the id of the course-owning subject'),
-                        )
+                        ]
                     )
                 ),
                 'subjects' => new external_multiple_structure(
                     new external_single_structure(
-                        array(
+                        [
                             'id' => new external_value(PARAM_TEXT, 'subject id'),
                             'title' => new external_value(PARAM_TEXT, 'subject title'),
-                        )
+                        ]
                     )
-                )
-            )
+                ),
+            ]
         );
     }
 }

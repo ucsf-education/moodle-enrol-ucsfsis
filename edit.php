@@ -30,19 +30,19 @@ require_once('../../group/lib.php');
 
 $courseid = required_param('courseid', PARAM_INT);
 $instanceid = optional_param('id', 0, PARAM_INT);
-$submitted_termid = optional_param('selectterm', null, PARAM_ALPHANUM);
+$submittedtermid = optional_param('selectterm', null, PARAM_ALPHANUM);
 
-$course = $DB->get_record('course', array('id'=>$courseid), '*', MUST_EXIST);
+$course = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
 $context = context_course::instance($course->id, MUST_EXIST);
 
 require_login($course);
 require_capability('moodle/course:enrolconfig', $context);
 require_capability('enrol/ucsfsis:config', $context);
 
-$PAGE->set_url('/enrol/ucsfsis/edit.php', array('courseid'=>$course->id, 'id'=>$instanceid));
+$PAGE->set_url('/enrol/ucsfsis/edit.php', ['courseid' => $course->id, 'id' => $instanceid]);
 $PAGE->set_pagelayout('admin');
 
-$returnurl = new moodle_url('/enrol/instances.php', array('id'=>$course->id));
+$returnurl = new moodle_url('/enrol/instances.php', ['id' => $course->id]);
 if (!enrol_is_enabled('ucsfsis')) {
     redirect($returnurl);
 }
@@ -50,7 +50,7 @@ if (!enrol_is_enabled('ucsfsis')) {
 $enrol = enrol_get_plugin('ucsfsis');
 
 // Allow only one instance for each course
-if ($instances = $DB->get_records('enrol', array('courseid'=>$course->id, 'enrol'=>'ucsfsis'), 'id ASC')) {
+if ($instances = $DB->get_records('enrol', ['courseid' => $course->id, 'enrol' => 'ucsfsis'], 'id ASC')) {
 
     $instance = array_shift($instances);
     if ($instances) {
@@ -60,15 +60,15 @@ if ($instances = $DB->get_records('enrol', array('courseid'=>$course->id, 'enrol
         }
     }
 
-// } else if ($instanceid) {
-//     // Logic to allow multiple instances
-//     $instance = $DB->get_record('enrol', array('courseid'=>$course->id, 'enrol'=>'ucsfsis', 'id'=>$instanceid), '*', MUST_EXIST);
+    // } else if ($instanceid) {
+    // Logic to allow multiple instances
+    // $instance = $DB->get_record('enrol', array('courseid'=>$course->id, 'enrol'=>'ucsfsis', 'id'=>$instanceid), '*', MUST_EXIST);
 } else {
     // No instance yet, we have to add new instance.
     if (!$enrol->get_newinstance_link($course->id)) {
         redirect($returnurl);
     }
-    navigation_node::override_active_url(new moodle_url('/enrol/instances.php', array('id'=>$course->id)));
+    navigation_node::override_active_url(new moodle_url('/enrol/instances.php', ['id' => $course->id]));
     $instance = new stdClass();
     $instance->id          = null;
     $instance->courseid    = $course->id;
@@ -79,12 +79,12 @@ if ($instances = $DB->get_records('enrol', array('courseid'=>$course->id, 'enrol
 
 
 // Tell $mform->definition() that we are loading a known term
-if (!empty($submitted_termid)) {
-    $instance->submitted_termid = $submitted_termid;
+if (!empty($submittedtermid)) {
+    $instance->submitted_termid = $submittedtermid;
 }
 
 // Edit form to be shown here
-$mform = new enrol_ucsfsis_edit_form(null, array($instance, $enrol, $course));
+$mform = new enrol_ucsfsis_edit_form(null, [$instance, $enrol, $course]);
 
 if ($mform->is_cancelled()) {
     redirect($returnurl);
@@ -104,7 +104,7 @@ if ($mform->is_cancelled()) {
     if (object_property_exists($data, 'selectcourse')) {
         $selectcourse = $data->selectcourse;
     } else {
-        $selectcourse = (int) $mform->getSubmitValue('selectcourse');
+        $selectcourse = (int) $mform->get_submit_value('selectcourse');
     }
 
     if ($instance->id) {
@@ -119,16 +119,16 @@ if ($mform->is_cancelled()) {
 
         // Use standard API to update instance status.
         if ($instance->status != $data->status) {
-            $instance = $DB->get_record('enrol', array('id'=>$instance->id));
+            $instance = $DB->get_record('enrol', ['id' => $instance->id]);
             $enrol->update_status($instance, $data->status);
             $context->mark_dirty();
         }
 
     } else {
-        $fields = array(
+        $fields = [
             'status'          => $data->status,
             'customint1'      => $selectcourse,
-            'roleid'          => $data->roleid);
+            'roleid'          => $data->roleid];
         $enrol->add_instance($course, $fields);
     }
 

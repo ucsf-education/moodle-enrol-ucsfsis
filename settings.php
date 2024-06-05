@@ -31,7 +31,7 @@ use enrol_ucsfsis\ucsfsis_oauth_client;
 
 if ($ADMIN->fulltree) {
 
-    //--- general settings -----------------------------------------------------------------------------------
+    // --- general settings -----------------------------------------------------------------------------------
     $settings->add(
         new admin_setting_heading(
             'enrol_ucsfsis_api_server_settings',
@@ -41,17 +41,17 @@ if ($ADMIN->fulltree) {
     );
 
 
-    //--- enrol instance defaults ----------------------------------------------------------------------------
+    // --- enrol instance defaults ----------------------------------------------------------------------------
     if (!during_initial_install()) {
 
-        $default_api_host = ucsfsis_oauth_client::DEFAULT_HOST;
+        $defaultapihost = ucsfsis_oauth_client::DEFAULT_HOST;
 
         $settings->add(
             new admin_setting_configtext(
                 'enrol_ucsfsis/host_url',
                 get_string('host_url', 'enrol_ucsfsis'),
                 get_string('host_url_desc', 'enrol_ucsfsis'),
-                $default_api_host
+                $defaultapihost
             )
         );
 
@@ -95,10 +95,10 @@ if ($ADMIN->fulltree) {
                 get_string('requestmethod', 'enrol_ucsfsis'),
                 get_string('requestmethod_desc', 'enrol_ucsfsis'),
                 0,
-                array(
+                [
                     0 => new lang_string('http_get', 'enrol_ucsfsis'),
-                    1 => new lang_string('http_post', 'enrol_ucsfsis')
-                )
+                    1 => new lang_string('http_post', 'enrol_ucsfsis'),
+                ]
             )
         );
 
@@ -121,12 +121,12 @@ if ($ADMIN->fulltree) {
         );
 
         // Check out role mapping
-        $options = array(
+        $options = [
             ENROL_EXT_REMOVED_UNENROL => get_string('extremovedunenrol', 'enrol'),
             ENROL_EXT_REMOVED_KEEP => get_string('extremovedkeep', 'enrol'),
             ENROL_EXT_REMOVED_SUSPEND => get_string('extremovedsuspend', 'enrol'),
-            ENROL_EXT_REMOVED_SUSPENDNOROLES => get_string('extremovedsuspendnoroles', 'enrol')
-        );
+            ENROL_EXT_REMOVED_SUSPENDNOROLES => get_string('extremovedsuspendnoroles', 'enrol'),
+        ];
         $settings->add(
             new admin_setting_configselect(
                 'enrol_ucsfsis/unenrolaction',

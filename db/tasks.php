@@ -26,8 +26,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$tasks = array(
-    array(
+$tasks = [
+    [
         'classname' => 'enrol_ucsfsis\task\cron_task',
         'blocking' => 0,
         'minute' => '*/10',
@@ -35,6 +35,6 @@ $tasks = array(
         'hour' => '0-2,6-23',
         'day' => '*',
         'month' => '*',
-        'dayofweek' => '*'
-    )
-);
+        'dayofweek' => '*',
+    ],
+];

@@ -26,22 +26,22 @@
 defined('MOODLE_INTERNAL') || die();
 
 
-$functions = array(
-    'enrol_ucsfsis_get_subjects_and_courses_by_term' => array(
+$functions = [
+    'enrol_ucsfsis_get_subjects_and_courses_by_term' => [
         'classname'   => 'enrol_ucsfsis_external',
         'methodname'  => 'get_subjects_and_courses_by_term',
         'description' => 'Returns the courses and subjects for a given term.',
         'type'        => 'read',
         'capabilities'  => 'moodle/course:enrolreview',
-        'ajax'          => true
-    ),
-);
+        'ajax'          => true,
+    ],
+];
 
-$services = array(
-    'enrol_ucsfsis' => array(
-        'functions' => array ('enrol_ucsfsis_get_subjects_and_courses_by_term'),
+$services = [
+    'enrol_ucsfsis' => [
+        'functions' => ['enrol_ucsfsis_get_subjects_and_courses_by_term'],
         'requiredcapability' => 'moodle/course:enrolreview',
         'restrictedusers' => 0,
         'enabled' => 1,
-    )
-);
+    ],
+];

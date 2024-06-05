@@ -54,62 +54,62 @@ class enrol_ucsfsis_edit_form extends moodleform {
 
         $sisisdown = !$http->is_logged_in();
 
-        $selected_term
-            = $selected_subject
-            = $selected_course
+        $selectedterm
+            = $selectedsubject
+            = $selectedcourse
             = '';
 
-        $terms = array();
+        $terms = [];
         // Load Term options
-        $rawTerms = array();
+        $rawterms = [];
         if (!$sisisdown) {
-            $rawTerms = $http->get_active_terms();
+            $rawterms = $http->get_active_terms();
         }
-        if (empty($rawTerms)) {
+        if (empty($rawterms)) {
             $sisisdown = true;
-            $termoptions = array('' => get_string('choosedots'));
+            $termoptions = ['' => get_string('choosedots')];
         } else {
-            foreach($rawTerms as $rawTerm) {
+            foreach($rawterms as $rawterm) {
                 $time = time();
-                $cleanTerm = enrol_ucsfsis_simplify_sis_term($rawTerm, $time);
-                $terms[] = $cleanTerm;
-                if ($cleanTerm->hasStarted) {
-                    if (empty($selected_term)) {
-                        $selected_term = $cleanTerm->id;
+                $cleanterm = enrol_ucsfsis_simplify_sis_term($rawterm, $time);
+                $terms[] = $cleanterm;
+                if ($cleanterm->hasStarted) {
+                    if (empty($selectedterm)) {
+                        $selectedterm = $cleanterm->id;
                     }
                 }
-                $termoptions[$cleanTerm->id] = $cleanTerm->title;
+                $termoptions[$cleanterm->id] = $cleanterm->title;
             }
 
             if ($instance->id) {
                 $siscourseid = $instance->customint1;
                 $siscourse = $http->get_course($siscourseid);
-                $selected_term = $siscourse->term;
-                $selected_subject = $siscourse->subjectForCorrespondTo;
-                $selected_course = $siscourseid;
+                $selectedterm = $siscourse->term;
+                $selectedsubject = $siscourse->subjectForCorrespondTo;
+                $selectedcourse = $siscourseid;
             }
-            $selected_term = isset($instance->submitted_termid) ?  $instance->submitted_termid : $selected_term;
+            $selectedterm = isset($instance->submitted_termid) ? $instance->submitted_termid : $selectedterm;
         }
 
         // Display error message (setConstant and hardFreeze fields)
         if ($sisisdown) {
-            $mform->addElement('html', $OUTPUT->notification(get_string('sisserverdown','enrol_ucsfsis'), 'notifyproblem'));
+            $mform->addElement('html', $OUTPUT->notification(get_string('sisserverdown', 'enrol_ucsfsis'), 'notifyproblem'));
         }
 
         // Add header text
-        $mform->addElement('header','general', get_string('pluginname_short', 'enrol_ucsfsis'));
+        $mform->addElement('header', 'general', get_string('pluginname_short', 'enrol_ucsfsis'));
 
         // Add 'Enable' Select box
-        $options = array(
+        $options = [
             ENROL_INSTANCE_ENABLED  => get_string('yes'),
             ENROL_INSTANCE_DISABLED => get_string('no'),
-        );
+        ];
         $mform->addElement(
             'select',
             'status',
             get_string('status', 'enrol_ucsfsis'),
             $options,
-            array('disabled' => 'disabled')
+            ['disabled' => 'disabled']
         );
         $mform->addHelpButton('status', 'status', 'enrol_ucsfsis');
         $mform->addRule('status', null, 'required', null, 'client');
@@ -124,58 +124,57 @@ class enrol_ucsfsis_edit_form extends moodleform {
             'selectterm',
             get_string('term', 'enrol_ucsfsis'),
             $termoptions,
-            array('disabled' => 'disabled')
+            ['disabled' => 'disabled']
         );
         $mform->addHelpButton('selectterm', 'term', 'enrol_ucsfsis');
-        $element->setValue($selected_term);
+        $element->setValue($selectedterm);
         $mform->addRule('selectterm', null, 'required', null, 'client');
 
-
-        $subjects = array();
-        $courses = array();
-        $subjectoptions = array('' => get_string('choosesubjectdots', 'enrol_ucsfsis'));
-        $courseoptions = array('' => get_string('choosecoursedots', 'enrol_ucsfsis'));
+        $subjects = [];
+        $courses = [];
+        $subjectoptions = ['' => get_string('choosesubjectdots', 'enrol_ucsfsis')];
+        $courseoptions = ['' => get_string('choosecoursedots', 'enrol_ucsfsis')];
 
         if (!$sisisdown) {
-            $rawSubjects = $http->get_subjects_in_term($selected_term);
-            if (!empty($rawSubjects)) {
-                foreach ($rawSubjects as $rawSubject) {
-                    $cleanSubject = enrol_ucsfsis_simplify_sis_subject($rawSubject);
-                    $subjects[] = $cleanSubject;
-                    $subjectoptions[$cleanSubject->id] = $cleanSubject->title;
+            $rawsubjects = $http->get_subjects_in_term($selectedterm);
+            if (!empty($rawsubjects)) {
+                foreach ($rawsubjects as $rawsubject) {
+                    $cleansubject = enrol_ucsfsis_simplify_sis_subject($rawsubject);
+                    $subjects[] = $cleansubject;
+                    $subjectoptions[$cleansubject->id] = $cleansubject->title;
                 }
             }
 
-            $rawCourses = $http->get_courses_in_term($selected_term);
-            if (!empty($rawCourses)) {
-                foreach ($rawCourses as $rawCourse) {
-                    $cleanCourse = enrol_ucsfsis_simplify_sis_course($rawCourse);
-                    $courses[] = $cleanCourse;
+            $rawcourses = $http->get_courses_in_term($selectedterm);
+            if (!empty($rawcourses)) {
+                foreach ($rawcourses as $rawcourse) {
+                    $cleancourse = enrol_ucsfsis_simplify_sis_course($rawcourse);
+                    $courses[] = $cleancourse;
 
-                    if ($selected_subject === $cleanCourse->subjectId) {
-                        if (empty($selected_course)) {
-                            $selected_course = $cleanCourse->id;
+                    if ($selectedsubject === $cleancourse->subjectId) {
+                        if (empty($selectedcourse)) {
+                            $selectedcourse = $cleancourse->id;
                         }
 
-                        $courseoptions[" " . $cleanCourse->id] = $cleanCourse->title;
+                        $courseoptions[" " . $cleancourse->id] = $cleancourse->title;
                     }
                 }
             }
         }
 
         // initialize the client-side form handler with the data we've loaded so far.
-        $term_ids = array_column($terms, 'id');
+        $termids = array_column($terms, 'id');
         $PAGE->requires->js_call_amd(
             'enrol_ucsfsis/edit_form',
             'init',
-            array(
+            [
                 $course->id,
-                $selected_term,
+                $selectedterm,
                 $subjects,
                 $courses,
                 get_string('choosesubjectdots', 'enrol_ucsfsis'),
                 get_string('choosecoursedots', 'enrol_ucsfsis'),
-            )
+            ]
         );
 
         $element = $mform->addElement(
@@ -183,22 +182,21 @@ class enrol_ucsfsis_edit_form extends moodleform {
             'selectsubject',
             get_string('subject', 'enrol_ucsfsis'),
             $subjectoptions,
-            array('disabled' => 'disabled')
+            ['disabled' => 'disabled']
         );
         $mform->addHelpButton('selectsubject', 'subject', 'enrol_ucsfsis');
-        $element->setValue($selected_subject);
+        $element->setValue($selectedsubject);
         $mform->addRule('selectsubject', null, 'required', null, 'client');
-
 
         $element = $mform->addElement(
             'select',
             'selectcourse',
             get_string('course', 'enrol_ucsfsis'),
             $courseoptions,
-            array('disabled' => 'disabled')
+            ['disabled' => 'disabled']
         );
         $mform->addHelpButton('selectcourse', 'course', 'enrol_ucsfsis');
-        $element->setValue(" " . $selected_course);
+        $element->setValue(" " . $selectedcourse);
         $mform->addRule('selectcourse', null, 'required', null, 'client');
         $mform->addRule('selectcourse', null, 'required', null, 'server');
 
@@ -212,11 +210,10 @@ class enrol_ucsfsis_edit_form extends moodleform {
             'roleid',
             get_string('assignrole', 'role'),
             $roles,
-            array('disabled' => 'disabled')
+            ['disabled' => 'disabled']
         );
         $mform->setDefault('roleid', $enrol->get_config('default_student_roleid'));
         $mform->addRule('roleid', null, 'required', null, 'client');
-
 
         $mform->addElement('hidden', 'courseid', null);
         $mform->setType('courseid', PARAM_INT);
@@ -242,8 +239,7 @@ class enrol_ucsfsis_edit_form extends moodleform {
      * @return mixed
      * @see QuickForm::getSubmitValue
      */
-    public function getSubmitValue($elementName)
-    {
-        return $this->_form->getSubmitValue($elementName);
+    public function get_submit_value($elementname) {
+        return $this->_form->getSubmitValue($elementname);
     }
 }
