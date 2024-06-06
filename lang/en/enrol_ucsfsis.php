@@ -114,6 +114,7 @@ It could look something like this:
    // add, student, 21, CF101, 1091115000, 1091215000
 </pre>';
 $string['pluginname_short'] = 'SIS enrolments';
+$string['privacy:metadata'] = 'The UCSF SIS enrolment plugin does not store any personal data.';
 $string['refreshtoken'] = 'Refresh token';
 $string['refreshtoken_desc'] = 'Refresh token description';
 $string['requestmethod'] = 'HTTP request method';
