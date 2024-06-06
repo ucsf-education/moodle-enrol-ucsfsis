@@ -23,10 +23,18 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use core_external\external_api;
+use core_external\external_description;
+use core_external\external_function_parameters;
+use core_external\external_single_structure;
+use core_external\external_multiple_structure;
+use core_external\external_value;
+use enrol_ucsfsis\ucsfsis_oauth_client;
+
 defined('MOODLE_INTERNAL') || die();
 
-require_once $CFG->libdir . '/externallib.php';
-require_once __DIR__ . '/../locallib.php';
+require_once( $CFG->libdir . '/externallib.php');
+require_once( __DIR__ . '/../locallib.php');
 
 /**
  * UCSF SIS enrolment external functions.
@@ -38,11 +46,12 @@ require_once __DIR__ . '/../locallib.php';
  * @since Moodle 3.4
  */
 class enrol_ucsfsis_external extends external_api {
-
     /**
-     * @return external_function_parameters
+     * Defines the input parameters for the enrol_ucsfsis_get_subjects_and_courses_by_term web service endpoint.
+     *
+     * @return external_function_parameters The parameter definition.
      */
-    public static function get_subjects_and_courses_by_term_parameters() {
+    public static function get_subjects_and_courses_by_term_parameters(): external_function_parameters {
         return new external_function_parameters(
             [
                 'courseid' => new external_value(PARAM_INT, 'Course ID', VALUE_REQUIRED),
@@ -52,13 +61,20 @@ class enrol_ucsfsis_external extends external_api {
     }
 
     /**
-     * @param $courseId
-     * @param $termId
-     * @return array
+     * Implements the enrol_ucsfsis_get_subjects_and_courses_by_term web service endpoint.
+     *
+     * Returns the SIS courses and SIS subjects for a given Moodle course and Moodle term.
+     *
+     * @param int $courseid The course ID.
+     * @param int $termid The term ID.
+     * @return array A list of SIS courses and a list of SIS subjects.
+     * @throws coding_exception
      * @throws dml_exception
      * @throws moodle_exception
+     * @throws require_login_exception
+     * @throws required_capability_exception
      */
-    public static function get_subjects_and_courses_by_term($courseid, $termid) {
+    public static function get_subjects_and_courses_by_term($courseid, $termid): array {
         global $DB;
         $raw = [
             'courses' => [],
@@ -80,19 +96,19 @@ class enrol_ucsfsis_external extends external_api {
         require_login($course);
         require_capability('moodle/course:enrolreview', $context);
 
-        /** @var enrol_ucsfsis_plugin $enrol */
+        /* @var enrol_ucsfsis_plugin $enrol This enrolment plugin. */
         $enrol = enrol_get_plugin('ucsfsis');
-        /** @var \enrol_ucsfsis\ucsfsis_oauth_client $http */
+        /* @var ucsfsis_oauth_client $http The SIS API client. */
         $http  = $enrol->get_http_client();
 
         if ($http->is_logged_in()) {
             $raw['courses'] = $http->get_courses_in_term($termid);
             $raw['subjects'] = $http->get_subjects_in_term($termid);
 
-            foreach($raw['courses'] as $course) {
+            foreach ($raw['courses'] as $course) {
                 $clean['courses'][] = enrol_ucsfsis_simplify_sis_course($course);
             }
-            foreach($raw['subjects'] as $subject) {
+            foreach ($raw['subjects'] as $subject) {
                 $clean['subjects'][] = enrol_ucsfsis_simplify_sis_subject($subject);
             }
         }
@@ -100,9 +116,11 @@ class enrol_ucsfsis_external extends external_api {
     }
 
     /**
-     * @return external_function_parameters
+     * Defines the output structure for the enrol_ucsfsis_get_subjects_and_courses_by_term web service endpoint.
+     *
+     * @return external_description The output structure definition.
      */
-    public static function get_subjects_and_courses_by_term_returns() {
+    public static function get_subjects_and_courses_by_term_returns(): external_description {
         return new external_function_parameters(
             [
                 'courses' => new external_multiple_structure(

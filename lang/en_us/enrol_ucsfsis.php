@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Strings for component 'enrol_ucsfsis', language 'en'.
+ * Strings for component 'enrol_ucsfsis', language 'en_us'.
  *
  * @package    enrol_ucsfsis
  * @copyright  2016 The Regents of the University of California
@@ -23,15 +23,14 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-// @TODO Convert 'enrol' to 'enroll' in en_us directory.
-// @TODO Convert 'Enrolment' to 'Enrollment' in en_us directory.
-// @TODO Convert 'synchronise' to 'synchronize' in en_us directory.
-// @TODO Enter text for help tips.
+// Todo: Convert 'enrol' to 'enroll' in en_us directory.
+// Todo: Convert 'Enrolment' to 'Enrollment' in en_us directory.
+// Todo: Convert 'synchronise' to 'synchronize' in en_us directory.
+// Todo: Enter text for help tips.
 
-
-$string['addgroup'] = 'Add to group';
 $string['accesstoken'] = 'Access token';
 $string['accesstoken_desc'] = 'Access token description';
+$string['addgroup'] = 'Add to group';
 $string['aftersaving...'] = 'Once you have saved your settings, you may wish to';
 $string['ajaxmore'] = 'More...';
 $string['api_server_settings'] = 'API server settings';
@@ -66,18 +65,14 @@ $string['http_post'] = 'POST';
 $string['instanceexists'] = 'Cohort is already synchronized with selected role';
 $string['location'] = 'File location';
 $string['location_desc'] = 'Specify full path to the enrollment file. The file is automatically deleted after processing.';
+$string['mapping'] = 'Flat file role mapping';
+$string['messageprovider:flatfile_enrollment'] = 'Flat file enrollment messages';
 $string['notifyadmin'] = 'Notify administrator';
 $string['notifyenrolled'] = 'Notify enrolled users';
 $string['notifyenroller'] = 'Notify user responsible for enrollments';
-$string['messageprovider:flatfile_enrollment'] = 'Flat file enrollment messages';
-$string['mapping'] = 'Flat file role mapping';
-// $string['oauthinfo'] = '<p>To use this plugin, you must register your site with UCSF at <a href="https://anypoint.mulesoft.com/apiplatform/ucsf#/portals">Mulesoft</a>.</p>
-// <p>As part of the registration process, you will need to enter the following URL as \'Redirect domain\':</p>
-// <p>{$a->callbackurl}</p>Once registered, you will be provided with a client ID and client secret which can be entered here.</p>';
 $string['oauthinfo'] = '<p>To use this plugin, you must register your site with UCSF at <a href="https://anypoint.mulesoft.com/apiplatform/ucsf#/portals">Mulesoft</a>.</p>
 <p>As part of the registration process, you will be provided with a client ID and client secret which can be entered here.</p>';
 $string['pluginname'] = 'UCSF Student Information System enrollments';
-$string['pluginname_short'] = 'SIS enrollments';
 $string['pluginname_desc'] = 'This method repeatedly check for and process a specially-formatted text file in the location that you specify.
 The file is a comma separated file assumed to have four or six fields per line:
 
@@ -118,11 +113,12 @@ It could look something like this:
    // del, student, 17, CF101
    // add, student, 21, CF101, 1091115000, 1091215000
 </pre>';
+$string['pluginname_short'] = 'SIS enrollments';
 $string['refreshtoken'] = 'Refresh token';
 $string['refreshtoken_desc'] = 'Refresh token description';
-$string['resourceid'] = 'UCSF resource account ID';
 $string['requestmethod'] = 'HTTP request method';
 $string['requestmethod_desc'] = 'Select the HTTP request method that is supported by the UCSF SIS API server.';
+$string['resourceid'] = 'UCSF resource account ID';
 $string['resourceid_desc'] = 'Enter the UCSF resource account ID to be used to contact the SIS server here.';
 $string['resourcepassword'] = 'UCSF resource account password';
 $string['resourcepassword_desc'] = 'Enter the UCSF resource account password to be used to contact the UCSF SIS server here.';
@@ -141,9 +137,9 @@ $string['subject_help'] = 'Select a subject in which the SIS course that will be
 $string['subjectoptionsupdate'] = 'Update Subject option';
 $string['term'] = 'Select a term (quarter)';
 $string['term_help'] = 'Select an academic term (quarter) for the SIS course that will be used for enrollments for this course.';
-$string['termoptionsupdate'] = 'Update Term option';
 $string['term_subject'] = 'Select Term / Subject';
 $string['term_subject_help'] = 'Help text for term and Subject';
-$string['viewenrolments'] = 'View SIS enrollments';
+$string['termoptionsupdate'] = 'Update Term option';
 $string['ucsfsis:config'] = 'Configure UCSF SIS instances';
 $string['ucsfsis:unenrol'] = 'Unenroll suspended users';
+$string['viewenrolments'] = 'View SIS enrollments';

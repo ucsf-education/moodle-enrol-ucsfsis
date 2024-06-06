@@ -51,13 +51,7 @@ if (!enrol_is_enabled('ucsfsis')) {
     cli_error(get_string('pluginnotenabled', 'enrol_ucsfsis'), 2);
 }
 
-/** @var enrol_ldap_plugin $enrol */
 $enrol = enrol_get_plugin('ucsfsis');
-
-// $trace = new text_progress_trace();
-
-// Update enrolments -- these handlers should autocreate courses if required.
-// $enrol->cron($trace);
 
 require_once("../classes/task/cron_task.php");
 

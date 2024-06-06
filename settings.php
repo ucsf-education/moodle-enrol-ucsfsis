@@ -22,16 +22,16 @@
  * @author     Carson Tam
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require_once(__DIR__.'/lib.php');
-
 
 defined('MOODLE_INTERNAL') || die();
+
+require_once(__DIR__ . '/lib.php');
 
 use enrol_ucsfsis\ucsfsis_oauth_client;
 
 if ($ADMIN->fulltree) {
 
-    // --- general settings -----------------------------------------------------------------------------------
+    // General settings.
     $settings->add(
         new admin_setting_heading(
             'enrol_ucsfsis_api_server_settings',
@@ -41,7 +41,7 @@ if ($ADMIN->fulltree) {
     );
 
 
-    // --- enrol instance defaults ----------------------------------------------------------------------------
+    // Enrol instance defaults.
     if (!during_initial_install()) {
 
         $defaultapihost = ucsfsis_oauth_client::DEFAULT_HOST;
@@ -55,7 +55,7 @@ if ($ADMIN->fulltree) {
             )
         );
 
-        // TODO: Remove resourceid and password.  Should ask prompt admin to log in and do callbacks
+        // Todo: Remove resourceid and password. Should ask prompt admin to log in and do callbacks.
         $settings->add(
             new admin_setting_configtext(
                 'enrol_ucsfsis/resourceid',
@@ -109,7 +109,7 @@ if ($ADMIN->fulltree) {
             )
         );
 
-        // Default role for students
+        // Default role for students.
         $options = get_default_enrol_roles(context_system::instance());
         $student = get_archetype_roles('student');
         $student = reset($student);
@@ -120,7 +120,7 @@ if ($ADMIN->fulltree) {
             )
         );
 
-        // Check out role mapping
+        // Check out role mapping.
         $options = [
             ENROL_EXT_REMOVED_UNENROL => get_string('extremovedunenrol', 'enrol'),
             ENROL_EXT_REMOVED_KEEP => get_string('extremovedkeep', 'enrol'),

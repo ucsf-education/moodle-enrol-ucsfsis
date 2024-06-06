@@ -27,4 +27,4 @@ defined('MOODLE_INTERNAL') || die();
 
 $plugin->version   = 2024060500;        // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires  = 2023100400;        // Requires this Moodle version.
-$plugin->component = 'enrol_ucsfsis';   // Full name of the plugin (used for diagnostics)
+$plugin->component = 'enrol_ucsfsis';   // Full name of the plugin (used for diagnostics).

@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Adds instance form
+ * The edit form.
  *
  * @package    enrol_ucsfsis
  * @copyright  2016 The Regents of the University of California
@@ -25,31 +25,33 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once $CFG->libdir . '/formslib.php';
-require_once 'lib.php';
-require_once 'locallib.php';
+require_once($CFG->libdir . '/formslib.php');
+require_once('lib.php');
+require_once('locallib.php');
 
+/**
+ * The edit form class.
+ *
+ * @package    enrol_ucsfsis
+ * @copyright  2016 The Regents of the University of California
+ * @author     Carson Tam <carson.tam@ucsf.edu>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class enrol_ucsfsis_edit_form extends moodleform {
-
     /**
-     * @inheritdoc
+     * Form definition.
+     *
      * @throws coding_exception
      * @throws moodle_exception
      */
-    public function definition() {
+    protected function definition(): void {
         global $PAGE, $OUTPUT;
 
         $mform = $this->_form;
 
-        /**
-         * @var \stdClass $instance
-         * @var enrol_ucsfsis_plugin $enrol
-         * @var \stdClass $course
-         */
         list($instance, $enrol, $course) = $this->_customdata;
         $context = context_course::instance($course->id);
 
-        /** @var \enrol_ucsfsis\ucsfsis_oauth_client $http */
         $http  = $enrol->get_http_client();
 
         $sisisdown = !$http->is_logged_in();
@@ -60,7 +62,7 @@ class enrol_ucsfsis_edit_form extends moodleform {
             = '';
 
         $terms = [];
-        // Load Term options
+        // Load Term options.
         $rawterms = [];
         if (!$sisisdown) {
             $rawterms = $http->get_active_terms();
@@ -69,7 +71,7 @@ class enrol_ucsfsis_edit_form extends moodleform {
             $sisisdown = true;
             $termoptions = ['' => get_string('choosedots')];
         } else {
-            foreach($rawterms as $rawterm) {
+            foreach ($rawterms as $rawterm) {
                 $time = time();
                 $cleanterm = enrol_ucsfsis_simplify_sis_term($rawterm, $time);
                 $terms[] = $cleanterm;
@@ -91,15 +93,18 @@ class enrol_ucsfsis_edit_form extends moodleform {
             $selectedterm = isset($instance->submitted_termid) ? $instance->submitted_termid : $selectedterm;
         }
 
-        // Display error message (setConstant and hardFreeze fields)
+        // Display error message (setConstant and hardFreeze fields).
         if ($sisisdown) {
-            $mform->addElement('html', $OUTPUT->notification(get_string('sisserverdown', 'enrol_ucsfsis'), 'notifyproblem'));
+            $mform->addElement(
+                'html',
+                $OUTPUT->notification(get_string('sisserverdown', 'enrol_ucsfsis'), 'notifyproblem')
+            );
         }
 
-        // Add header text
+        // Add header text.
         $mform->addElement('header', 'general', get_string('pluginname_short', 'enrol_ucsfsis'));
 
-        // Add 'Enable' Select box
+        // Add 'Enable' Select box.
         $options = [
             ENROL_INSTANCE_ENABLED  => get_string('yes'),
             ENROL_INSTANCE_DISABLED => get_string('no'),
@@ -118,7 +123,7 @@ class enrol_ucsfsis_edit_form extends moodleform {
             $mform->hardFreeze('status', $instance->status);
         }
 
-        // Add Term Select box
+        // Add Term Select box.
         $element = $mform->addElement(
             'select',
             'selectterm',
@@ -162,7 +167,7 @@ class enrol_ucsfsis_edit_form extends moodleform {
             }
         }
 
-        // initialize the client-side form handler with the data we've loaded so far.
+        // Initialize the client-side form handler with the data we've loaded so far.
         $termids = array_column($terms, 'id');
         $PAGE->requires->js_call_amd(
             'enrol_ucsfsis/edit_form',
@@ -235,8 +240,8 @@ class enrol_ucsfsis_edit_form extends moodleform {
      * We need to retrieve the raw, user-submitted data from the internal QuickForm object
      * for form-submission processing further downstream.
      * [ST 2018/08/21]
-     * @param string $elementName
-     * @return mixed
+     * @param string $elementname The form element name.
+     * @return mixed The submitted value.
      * @see QuickForm::getSubmitValue
      */
     public function get_submit_value($elementname) {

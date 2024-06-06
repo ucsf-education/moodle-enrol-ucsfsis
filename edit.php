@@ -49,7 +49,7 @@ if (!enrol_is_enabled('ucsfsis')) {
 
 $enrol = enrol_get_plugin('ucsfsis');
 
-// Allow only one instance for each course
+// Allow only one instance for each course.
 if ($instances = $DB->get_records('enrol', ['courseid' => $course->id, 'enrol' => 'ucsfsis'], 'id ASC')) {
 
     $instance = array_shift($instances);
@@ -59,10 +59,6 @@ if ($instances = $DB->get_records('enrol', ['courseid' => $course->id, 'enrol' =
             $enrol->delete_instance($del);
         }
     }
-
-    // } else if ($instanceid) {
-    // Logic to allow multiple instances
-    // $instance = $DB->get_record('enrol', array('courseid'=>$course->id, 'enrol'=>'ucsfsis', 'id'=>$instanceid), '*', MUST_EXIST);
 } else {
     // No instance yet, we have to add new instance.
     if (!$enrol->get_newinstance_link($course->id)) {
@@ -74,16 +70,16 @@ if ($instances = $DB->get_records('enrol', ['courseid' => $course->id, 'enrol' =
     $instance->courseid    = $course->id;
     $instance->enrol       = 'ucsfsis';
     $instance->status      = ENROL_INSTANCE_ENABLED;
-    $instance->customint1  = null;  // UCSF SIS course ID
+    $instance->customint1  = null;  // UCSF SIS course ID.
 }
 
 
-// Tell $mform->definition() that we are loading a known term
+// Tell $mform->definition() that we are loading a known term.
 if (!empty($submittedtermid)) {
     $instance->submitted_termid = $submittedtermid;
 }
 
-// Edit form to be shown here
+// Edit form to be shown here.
 $mform = new enrol_ucsfsis_edit_form(null, [$instance, $enrol, $course]);
 
 if ($mform->is_cancelled()) {
@@ -92,11 +88,11 @@ if ($mform->is_cancelled()) {
 } else if ($data = $mform->get_data()) {
     // We are here only because the form is submitted.
 
-    /**
+    /*
      * KLUDGE!
      * Moodle won't let us get values of form elements that weren't in the original form definition.
      * Since we're loading courses into the corresponding dropdown via XHR callbacks, the form submission handler may
-     * disregards them.
+     * disregard them.
      * So we have to dig deeper and check the raw, submitted values.
      * [ST 2018/08/21]
      */
@@ -110,9 +106,9 @@ if ($mform->is_cancelled()) {
     if ($instance->id) {
         $instance->roleid          = $data->roleid;
         $instance->customint1      = $selectcourse;
-        // Clear SIS course id if exists
+        // Clear SIS course id if exists.
         $instance->customchar1     = '';
-        $instance->customtext1     = '';  // get the descriptive course name here.
+        $instance->customtext1     = '';  // Get the descriptive course name here.
         $instance->timemodified    = time();
 
         $DB->update_record('enrol', $instance);
