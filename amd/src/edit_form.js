@@ -1,7 +1,21 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
 /**
  * Form controller for the Edit Form of the UCSF SIS enrolment plugin.
  *
- * @package enrol_ucsfsis
  * @module enrol_ucsfsis/edit_form
  */
 define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notification) {
@@ -58,7 +72,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
       this.termId = termId;
 
       if (this.cache.subjects.hasOwnProperty(this.termId)) {
-        setTimeout(function(){
+        setTimeout(function() {
           that.repopulateSelect(that.$subjectSelect, that.cache.subjects[that.termId], that.subjectsDefaultOptionText);
           that.repopulateSelect(that.$courseSelect, [], that.coursesDefaultOptionText);
           that.enableForm();
@@ -80,7 +94,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
       this.enableForm();
     },
 
-    enableForm: function(){
+    enableForm: function() {
       $('#id_status').prop('disabled', false);
       this.$termSelect.prop('disabled', false);
       this.$subjectSelect.prop('disabled', false);
@@ -89,7 +103,7 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
       $('#id_submitbutton').prop('disabled', false);
     },
 
-    disableForm: function(){
+    disableForm: function() {
       $('#id_status').prop('disabled', true);
       this.$termSelect.prop('disabled', true);
       this.$subjectSelect.prop('disabled', true);
@@ -117,9 +131,9 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
       this.cache.subjects[termId] = subjects;
       this.cache.courses[termId] = {};
 
-      for(i = 0, n = courses.length; i < n; i++) {
+      for (i = 0, n = courses.length; i < n; i++) {
         course = courses[i];
-        if (! this.cache.courses[termId].hasOwnProperty(course.subjectId)) {
+        if (!this.cache.courses[termId].hasOwnProperty(course.subjectId)) {
           this.cache.courses[termId][course.subjectId] = [];
         }
         this.cache.courses[termId][course.subjectId].push(course);
