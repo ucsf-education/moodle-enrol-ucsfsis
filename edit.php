@@ -51,7 +51,6 @@ $enrol = enrol_get_plugin('ucsfsis');
 
 // Allow only one instance for each course.
 if ($instances = $DB->get_records('enrol', ['courseid' => $course->id, 'enrol' => 'ucsfsis'], 'id ASC')) {
-
     $instance = array_shift($instances);
     if ($instances) {
         // Oh - we allow only one instance per course!!
@@ -84,7 +83,6 @@ $mform = new enrol_ucsfsis_edit_form(null, [$instance, $enrol, $course]);
 
 if ($mform->is_cancelled()) {
     redirect($returnurl);
-
 } else if ($data = $mform->get_data()) {
     // We are here only because the form is submitted.
 
@@ -119,7 +117,6 @@ if ($mform->is_cancelled()) {
             $enrol->update_status($instance, $data->status);
             $context->mark_dirty();
         }
-
     } else {
         $fields = [
             'status'          => $data->status,

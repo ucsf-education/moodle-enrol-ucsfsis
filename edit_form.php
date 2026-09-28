@@ -49,7 +49,7 @@ class enrol_ucsfsis_edit_form extends moodleform {
 
         $mform = $this->_form;
 
-        list($instance, $enrol, $course) = $this->_customdata;
+        [$instance, $enrol, $course] = $this->_customdata;
         $context = context_course::instance($course->id);
 
         $http  = $enrol->get_http_client();

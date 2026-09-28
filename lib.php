@@ -37,7 +37,7 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
     /**
      * @var object SIS client object.
      */
-    protected $_sisclient = null;
+    protected $sisclient = null;
 
     /**
      * Returns localised name of enrol instance.
@@ -51,7 +51,7 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
         global $DB;
 
         $enrol = $this->get_name();
-        $iname = get_string('pluginname_short', 'enrol_'.$enrol);
+        $iname = get_string('pluginname_short', 'enrol_' . $enrol);
 
         if (!empty($instance)) {
             // Append assigned role.
@@ -91,8 +91,10 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
 
         $coursecontext = context_course::instance($courseid, MUST_EXIST);
 
-        if (!has_capability('moodle/course:enrolconfig', $coursecontext)
-            || !has_capability('enrol/ucsfsis:config', $coursecontext)) {
+        if (
+            !has_capability('moodle/course:enrolconfig', $coursecontext)
+            || !has_capability('enrol/ucsfsis:config', $coursecontext)
+        ) {
             return false;
         }
 
@@ -168,8 +170,12 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
 
         if (has_capability('enrol/ucsfsis:config', $context)) {
             $editlink = new moodle_url("/enrol/ucsfsis/edit.php", ['courseid' => $instance->courseid, 'id' => $instance->id]);
-            $icons[] = $OUTPUT->action_icon($editlink, new pix_icon('t/edit', get_string('edit'), 'core',
-                                                                    ['class' => 'iconsmall']));
+            $icons[] = $OUTPUT->action_icon($editlink, new pix_icon(
+                't/edit',
+                get_string('edit'),
+                'core',
+                ['class' => 'iconsmall']
+            ));
         }
 
         return $icons;
@@ -257,17 +263,17 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
                             $this->enrol_user($instance, $userid, $instance->roleid, 0, 0, $status);
                             $trace->output(
                                 "changing enrollment status to '{$status}' from '{$ue->status}': userid $userid ==> courseid "
-                                . $instance->courseid
-                                , 1
+                                . $instance->courseid,
+                                1
                             );
                         }
                     } else {
                         $this->enrol_user($instance, $userid, $instance->roleid, 0, 0, $status);
-                        $trace->output("enrolling with $status status: userid $userid ==> courseid ".$instance->courseid, 1);
+                        $trace->output("enrolling with $status status: userid $userid ==> courseid " . $instance->courseid, 1);
                     }
                     $enrolleduserids[] = $userid;
                 } else {
-                    $trace->output("skipping: Cannot find UCID, ".$ucid.", that matches a Moodle user.");
+                    $trace->output("skipping: Cannot find UCID, " . $ucid . ", that matches a Moodle user.");
                 }
             }
 
@@ -282,12 +288,12 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
                     if ($unenrolaction == ENROL_EXT_REMOVED_UNENROL) {
                         // Remove enrolment together with group membership, grades, preferences, etc.
                         $this->unenrol_user($instance, $ue->userid);
-                        $trace->output("unenrolling: $ue->userid ==> ".$instance->courseid, 1);
+                        $trace->output("unenrolling: $ue->userid ==> " . $instance->courseid, 1);
                     } else if ($unenrolaction == ENROL_EXT_REMOVED_SUSPEND || $unenrolaction == ENROL_EXT_REMOVED_SUSPENDNOROLES) {
                         // Suspend enrolments.
                         if ($ue->status != ENROL_USER_SUSPENDED) {
                             $this->update_user_enrol($instance, $ue->userid, ENROL_USER_SUSPENDED);
-                            $trace->output("suspending: userid ".$ue->userid." ==> courseid ".$instance->courseid, 1);
+                            $trace->output("suspending: userid " . $ue->userid . " ==> courseid " . $instance->courseid, 1);
                         }
                         if ($unenrolaction == ENROL_EXT_REMOVED_SUSPENDNOROLES) {
                             $context = context_course::instance($instance->courseid);
@@ -296,13 +302,12 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
                                 'contextid' => $context->id,
                                 'component' => 'enrol_ucsfsis',
                                 'itemid' => $instance->id,
-                                ]
-                            );
+                                ]);
                             $trace->output(
                                 "unsassigning all roles: userid "
-                                . $ue->userid." ==> courseid "
-                                . $instance->courseid
-                                , 1
+                                . $ue->userid . " ==> courseid "
+                                . $instance->courseid,
+                                1
                             );
                         }
                     }
@@ -338,7 +343,7 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
         $rs = $DB->get_recordset_sql($sql, $params);
         foreach ($rs as $ra) {
             role_assign($ra->roleid, $ra->userid, $ra->contextid, 'enrol_ucsfsis', $ra->itemid);
-            $trace->output("assigning role: $ra->userid ==> $ra->courseid as ".$allroles[$ra->roleid]->shortname, 1);
+            $trace->output("assigning role: $ra->userid ==> $ra->courseid as " . $allroles[$ra->roleid]->shortname, 1);
         }
         $rs->close();
 
@@ -359,7 +364,7 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
         $rs = $DB->get_recordset_sql($sql, $params);
         foreach ($rs as $ra) {
             role_unassign($ra->roleid, $ra->userid, $ra->contextid, 'enrol_ucsfsis', $ra->itemid);
-            $trace->output("unassigning role: $ra->userid ==> $ra->courseid as ".$allroles[$ra->roleid]->shortname, 1);
+            $trace->output("unassigning role: $ra->userid ==> $ra->courseid as " . $allroles[$ra->roleid]->shortname, 1);
         }
         $rs->close();
 
@@ -485,15 +490,17 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
     public function restore_role_assignment($instance, $roleid, $userid, $contextid): void {
         global $DB;
 
-        if ($this->get_config('unenrolaction') == ENROL_EXT_REMOVED_UNENROL
-            || $this->get_config('unenrolaction') == ENROL_EXT_REMOVED_SUSPENDNOROLES) {
+        if (
+            $this->get_config('unenrolaction') == ENROL_EXT_REMOVED_UNENROL
+            || $this->get_config('unenrolaction') == ENROL_EXT_REMOVED_SUSPENDNOROLES
+        ) {
             // Skip any roles restore, they should be already synced automatically.
             return;
         }
 
         // Just restore every role.
         if ($DB->record_exists('user_enrolments', ['enrolid' => $instance->id, 'userid' => $userid])) {
-            role_assign($roleid, $userid, $contextid, 'enrol_'.$instance->enrol, $instance->id);
+            role_assign($roleid, $userid, $contextid, 'enrol_' . $instance->enrol, $instance->id);
         }
     }
 
@@ -504,8 +511,8 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
      * @throws moodle_exception
      */
     public function get_http_client() {
-        if (empty($this->_sisclient)) {
-            $this->_sisclient = new ucsfsis_oauth_client(
+        if (empty($this->sisclient)) {
+            $this->sisclient = new ucsfsis_oauth_client(
                 $this->get_config('clientid'),
                 $this->get_config('secret'),
                 $this->get_config('resourceid'),
@@ -514,7 +521,7 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
                 true
             );
         }
-        return $this->_sisclient;
+        return $this->sisclient;
     }
 
     /**
@@ -653,7 +660,7 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
             $hosturl = ucsfsis_oauth_client::DEFAULT_HOST;
         }
 
-        $result = $oauth->get_all_data($hosturl.'/general/sis/1.0/schools');
+        $result = $oauth->get_all_data($hosturl . '/general/sis/1.0/schools');
         echo "School Data: <br />";
         var_dump($result);
 
@@ -661,7 +668,7 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
         echo "Active Term Data: <br />";
         var_dump($terms);
 
-        $result = $oauth->get_all_data($hosturl.'/general/sis/1.0/departments');
+        $result = $oauth->get_all_data($hosturl . '/general/sis/1.0/departments');
         echo "Department Data: <br />";
         var_dump($result);
 
@@ -672,7 +679,7 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
                     break;
                 }
                 $result = $oauth->get_subjects_in_term($term->id);
-                echo "Subject Data in Term " . $term->name . " (" . count($result) ."): <br />";
+                echo "Subject Data in Term " . $term->name . " (" . count($result) . "): <br />";
                 var_dump($result);
             }
         }
@@ -683,7 +690,7 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
                     break;
                 }
                 $result = $oauth->get_courses_in_term($term->id);
-                echo "Course Data in Term " . $term->name . " (" . count($result) ."): <br />";
+                echo "Course Data in Term " . $term->name . " (" . count($result) . "): <br />";
                 var_dump($result);
             }
         }

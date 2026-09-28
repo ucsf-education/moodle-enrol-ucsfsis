@@ -60,14 +60,14 @@ class cron_task extends scheduled_task {
         if (!empty($index)) {
             $total = $DB->count_records('enrol', [ 'enrol' => 'ucsfsis', 'status' => '0']);
             if (!empty($total)) {
-                $info .= '<br />'.round($index / $total * 100) . "% has been completed.";
+                $info .= '<br />' . round($index / $total * 100) . "% has been completed.";
             }
         }
 
         // Last completed time.
         $lastcompleted = $enrol->get_config('last_completed_time');
         if (!empty($lastcompleted)) {
-            $info .= "<br />Last complete run was on ".userdate($lastcompleted).'.';
+            $info .= "<br />Last complete run was on " . userdate($lastcompleted) . '.';
         }
 
         // Append and format extra information.
@@ -94,11 +94,14 @@ class cron_task extends scheduled_task {
         $numupdated = 0;                 // Number of courses has been sync'd on this run.
         $startindex = $enrol->get_config('last_sync_course_index', 0);
 
-        $courses = $DB->get_records( 'enrol',
-                                     [ 'enrol' => 'ucsfsis', 'status' => '0' ],
-                                     'timecreated',
-                                     'id, courseid, roleid, customint1',
-                                     $startindex, $numlimit );
+        $courses = $DB->get_records(
+            'enrol',
+            [ 'enrol' => 'ucsfsis', 'status' => '0' ],
+            'timecreated',
+            'id, courseid, roleid, customint1',
+            $startindex,
+            $numlimit
+        );
         if (empty($courses)) {
             // Reset startindex for next run.
             $startindex = 0;    // Start from beginning again.
