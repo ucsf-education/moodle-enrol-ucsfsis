@@ -37,7 +37,7 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
     /**
      * @var object SIS client object.
      */
-    protected $_sisclient = null;
+    protected $sisclient = null;
 
     /**
      * Returns localised name of enrol instance.
@@ -511,8 +511,8 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
      * @throws moodle_exception
      */
     public function get_http_client() {
-        if (empty($this->_sisclient)) {
-            $this->_sisclient = new ucsfsis_oauth_client(
+        if (empty($this->sisclient)) {
+            $this->sisclient = new ucsfsis_oauth_client(
                 $this->get_config('clientid'),
                 $this->get_config('secret'),
                 $this->get_config('resourceid'),
@@ -521,7 +521,7 @@ class enrol_ucsfsis_plugin extends enrol_plugin {
                 true
             );
         }
-        return $this->_sisclient;
+        return $this->sisclient;
     }
 
     /**
