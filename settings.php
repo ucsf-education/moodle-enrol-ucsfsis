@@ -30,7 +30,6 @@ require_once(__DIR__ . '/lib.php');
 use enrol_ucsfsis\ucsfsis_oauth_client;
 
 if ($ADMIN->fulltree) {
-
     // General settings.
     $settings->add(
         new admin_setting_heading(
@@ -43,7 +42,6 @@ if ($ADMIN->fulltree) {
 
     // Enrol instance defaults.
     if (!during_initial_install()) {
-
         $defaultapihost = ucsfsis_oauth_client::DEFAULT_HOST;
 
         $settings->add(
@@ -105,7 +103,8 @@ if ($ADMIN->fulltree) {
         $settings->add(
             new admin_setting_heading(
                 'enrol_ucsfsis_defaults',
-                get_string('enrolinstancedefaults', 'admin'), get_string('enrolinstancedefaults_desc', 'admin')
+                get_string('enrolinstancedefaults', 'admin'),
+                get_string('enrolinstancedefaults_desc', 'admin')
             )
         );
 
@@ -116,7 +115,10 @@ if ($ADMIN->fulltree) {
         $settings->add(
             new admin_setting_configselect(
                 'enrol_ucsfsis/default_student_roleid',
-                get_string('defaultrole', 'role').' for students', '', $student->id, $options
+                get_string('defaultrole', 'role') . ' for students',
+                '',
+                $student->id,
+                $options
             )
         );
 

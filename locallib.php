@@ -68,13 +68,13 @@ function enrol_ucsfsis_simplify_sis_subject(stdClass $sissubject): stdClass {
 function enrol_ucsfsis_simplify_sis_term(stdClass $sisterm, $time = 0) {
     $simpleterm = new stdClass();
     $simpleterm->id = $sisterm->id;
-    $simpleterm->title = $sisterm->id . ": ". $sisterm->name;
+    $simpleterm->title = $sisterm->id . ": " . $sisterm->name;
     $starttime = strtotime($sisterm->fileDateForEnrollment->enrollmentStart);
     $simpleterm->hasStarted = true;
     if ($time < $starttime) {
         $simpleterm->hasStarted = false;
         $simpleterm->title = $simpleterm->title
-            . get_string('enrolmentstartson', 'enrol_ucsfsis',  date(
+            . get_string('enrolmentstartson', 'enrol_ucsfsis', date(
                 "M j, Y",
                 $starttime
             ));

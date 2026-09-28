@@ -33,8 +33,8 @@ use enrol_ucsfsis\ucsfsis_oauth_client;
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once( $CFG->libdir . '/externallib.php');
-require_once( __DIR__ . '/../locallib.php');
+require_once($CFG->libdir . '/externallib.php');
+require_once(__DIR__ . '/../locallib.php');
 
 /**
  * UCSF SIS enrolment external functions.

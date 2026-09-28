@@ -60,14 +60,14 @@ class sis_client_cache extends curl_cache {
         // Sort param so that filename can be consistent.
         ksort($param);
 
-        $filename = 'u'.'_'.md5(serialize($param));
-        if (file_exists($this->dir.$filename)) {
-            $lasttime = filemtime($this->dir.$filename);
+        $filename = 'u' . '_' . md5(serialize($param));
+        if (file_exists($this->dir . $filename)) {
+            $lasttime = filemtime($this->dir . $filename);
             if (time() - $lasttime > $this->ttl) {
                 return false;
             } else {
-                $fp = fopen($this->dir.$filename, 'r');
-                $size = filesize($this->dir.$filename);
+                $fp = fopen($this->dir . $filename, 'r');
+                $size = filesize($this->dir . $filename);
                 $content = fread($fp, $size);
                 $result = unserialize($content);
                 return $result;
@@ -92,11 +92,11 @@ class sis_client_cache extends curl_cache {
                 // Sort param so that filename can be consistent.
                 ksort($param);
 
-                $filename = 'u'.'_'.md5(serialize($param));
-                $fp = fopen($this->dir.$filename, 'w');
+                $filename = 'u' . '_' . md5(serialize($param));
+                $fp = fopen($this->dir . $filename, 'w');
                 fwrite($fp, serialize($val));
                 fclose($fp);
-                @chmod($this->dir.$filename, $CFG->filepermissions);
+                @chmod($this->dir . $filename, $CFG->filepermissions);
             }
         }
     }
@@ -108,8 +108,8 @@ class sis_client_cache extends curl_cache {
         if ($dir = opendir($this->dir)) {
             while (false !== ($file = readdir($dir))) {
                 if (!is_dir($file) && $file != '.' && $file != '..') {
-                    if (strpos($file, 'u'.'_') !== false) {
-                        @unlink($this->dir.$file);
+                    if (strpos($file, 'u' . '_') !== false) {
+                        @unlink($this->dir . $file);
                     }
                 }
             }

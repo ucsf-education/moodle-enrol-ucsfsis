@@ -27,7 +27,7 @@ namespace enrol_ucsfsis;
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->libdir.'/oauthlib.php');
+require_once($CFG->libdir . '/oauthlib.php');
 
 use dml_exception;
 use moodle_exception;
@@ -125,7 +125,7 @@ class ucsfsis_oauth_client extends oauth2_client {
         $this->password = $password;
 
         // We need these in the header all time.
-        $this->setHeader(['client_id: '.$clientid, 'client_secret: '.$clientsecret]);
+        $this->setHeader(['client_id: ' . $clientid, 'client_secret: ' . $clientsecret]);
 
         if (!empty($host)) {
             $this->baseurl = $host;
@@ -135,7 +135,6 @@ class ucsfsis_oauth_client extends oauth2_client {
             $this->cache = new sis_client_cache('enrol_ucsfsis');
             $this->longercache = new sis_client_cache('enrol_ucsfsis/daily', 24 * 60 * 60);
         }
-
     }
 
     /**
@@ -150,7 +149,6 @@ class ucsfsis_oauth_client extends oauth2_client {
         // Has the token expired?
         $accesstoken = $this->get_accesstoken();
         if (isset($accesstoken->expires) && time() >= $accesstoken->expires) {
-
             // Try to obtain a new access token with a refresh token.
             if (!empty($this->refreshtoken)) {
                 if ($this->refresh_token($this->refreshtoken)) {
@@ -194,7 +192,7 @@ class ucsfsis_oauth_client extends oauth2_client {
     protected function request($url, $options = [], $acceptheader = 'application/json') {
 
         // We need these in the header all time.
-        $this->setHeader(['client_id: '.$this->get_clientid(), 'client_secret: '.$this->get_clientsecret()]);
+        $this->setHeader(['client_id: ' . $this->get_clientid(), 'client_secret: ' . $this->get_clientsecret()]);
 
         $response = parent::request($url, $options, $acceptheader);
 
@@ -209,7 +207,7 @@ class ucsfsis_oauth_client extends oauth2_client {
     protected function store_token($token): void {
         global $CFG, $SESSION;
 
-        require_once($CFG->libdir.'/moodlelib.php');
+        require_once($CFG->libdir . '/moodlelib.php');
 
         // The $accesstoken class member is private, need to call parent to set it.
         parent::store_token($token);
@@ -236,7 +234,7 @@ class ucsfsis_oauth_client extends oauth2_client {
     protected function store_refresh_token($token): void {
         global $CFG;
 
-        require_once($CFG->libdir.'/moodlelib.php');
+        require_once($CFG->libdir . '/moodlelib.php');
 
         $this->refreshtoken = $token;
 
@@ -256,7 +254,7 @@ class ucsfsis_oauth_client extends oauth2_client {
     protected function get_stored_token() {
         global $CFG;
 
-        require_once($CFG->libdir.'/moodlelib.php');
+        require_once($CFG->libdir . '/moodlelib.php');
 
         $accesstoken = new stdClass();
         $accesstoken->token = get_config('enrol_ucsfsis', 'accesstoken');
@@ -278,7 +276,7 @@ class ucsfsis_oauth_client extends oauth2_client {
     protected function get_stored_refresh_token() {
         global $CFG;
 
-        require_once($CFG->libdir.'/moodlelib.php');
+        require_once($CFG->libdir . '/moodlelib.php');
 
         $refreshtoken = get_config('enrol_ucsfsis', 'refreshtoken');
 
@@ -311,7 +309,7 @@ class ucsfsis_oauth_client extends oauth2_client {
     protected function use_http_get(): bool {
         global $CFG;
 
-        require_once($CFG->libdir.'/moodlelib.php');
+        require_once($CFG->libdir . '/moodlelib.php');
 
         $httpmethod = get_config('enrol_ucsfsis', 'requestmethod');
 
@@ -471,7 +469,7 @@ class ucsfsis_oauth_client extends oauth2_client {
         $queryprefix = strstr($uri, '?') ? '&' : '?';
 
         do {
-            $modifieduri = $uri . $queryprefix."limit=$limit&offset=$offset";
+            $modifieduri = $uri . $queryprefix . "limit=$limit&offset=$offset";
 
             $result = $this->get($modifieduri);
             $response = $result; // Save response for debugging.
@@ -511,7 +509,6 @@ class ucsfsis_oauth_client extends oauth2_client {
                     return false;
                 }
             }
-
         } while (!empty($data));
 
         // Double check list size (if available).
@@ -547,7 +544,7 @@ class ucsfsis_oauth_client extends oauth2_client {
             $this->cache = $this->longercache;
         }
 
-        $uri = $this->api_url().'/terms?sort=-termStartDate';
+        $uri = $this->api_url() . '/terms?sort=-termStartDate';
         $terms = $this->get_all_data($uri);
 
         // Restore short term cache.
@@ -584,7 +581,7 @@ class ucsfsis_oauth_client extends oauth2_client {
             $this->cache = $this->longercache;
         }
 
-        $uri = $this->api_url()."/terms/$termid/subjects?sort=name";
+        $uri = $this->api_url() . "/terms/$termid/subjects?sort=name";
         $ret = $this->get_all_data($uri);
 
         // Restore short term cache.
@@ -603,7 +600,7 @@ class ucsfsis_oauth_client extends oauth2_client {
      */
     public function get_course($courseid) {
         $courseid = $courseid;
-        $uri = $this->api_url()."/courses/$courseid";
+        $uri = $this->api_url() . "/courses/$courseid";
         $ret = $this->get_data($uri);
 
         return $ret;
@@ -623,7 +620,7 @@ class ucsfsis_oauth_client extends oauth2_client {
             $this->cache = $this->longercache;
         }
 
-        $uri = $this->api_url()."/terms/$termid/courses?sort=courseNumber";
+        $uri = $this->api_url() . "/terms/$termid/courses?sort=courseNumber";
         $ret = $this->get_all_data($uri);
 
         // Restore short term cache.
@@ -646,7 +643,7 @@ class ucsfsis_oauth_client extends oauth2_client {
         $cache = $this->cache;
         $this->cache = null;
 
-        $uri = $this->api_url()."/courseEnrollments?courseId=$courseid";
+        $uri = $this->api_url() . "/courseEnrollments?courseId=$courseid";
         $enrollment = $this->get_all_data($uri);
 
         // Restore the cache object.
@@ -672,13 +669,13 @@ class ucsfsis_oauth_client extends oauth2_client {
                         case "A":
                             $obj->status = ENROL_USER_ACTIVE;
                             $enrollist[$e->student->empno] = $obj;
-                        break;
+                            break;
                         case "I":
                             if (!isset($enrollist[$e->student->empno])) {
                                 $obj->status = ENROL_USER_SUSPENDED;
                                 $enrollist[$e->student->empno] = $obj;
                             }
-                        break;
+                            break;
                         case "S":
                         case "F":
                         default:
@@ -713,7 +710,7 @@ class ucsfsis_oauth_client extends oauth2_client {
                 }
             }
         } else if (is_array($data)) {
-            array_walk($data,  [self::class, 'trim_data']);
+            array_walk($data, [self::class, 'trim_data']);
         }
 
         return $data;
